@@ -276,13 +276,9 @@ Repository: `https://github.com/is4kov/pttrnly`
 - Branch name: `PTRN-{n}-short-slug` — e.g. `PTRN-4-gradient-stop-editor`. Lowercase kebab slug, a few words.
 - The bracketed form `[PTRN-{n}]` is the prefix for **commit messages and PR titles**, not for branch names (brackets in refs need shell quoting and confuse some tooling).
 
-**Allocating `{n}`:** take the highest `PTRN-` number appearing in *any* pull request on the repo — open, closed, or merged — and in `TASKS.md`, then add one. Scan PRs rather than branches: merged branches get deleted, PRs do not. Never reuse a number, even from an abandoned task.
+**Allocating `{n}`:** take the highest `PTRN-` number appearing in *any* pull request on the repo — open, closed, or merged — and add one. Scan PRs rather than branches: merged branches get deleted, PRs do not. Never reuse a number, even from an abandoned task.
 
-**`TASKS.md` at the repo root is an append-only ledger.** One row per allocated number, added in the same PR that uses it:
-
-```
-| PTRN-1 | Project instructions and task ledger | #1 | merged |
-```
+**`TASKS.md` is a local, gitignored convenience ledger** — one row per allocated number, with a link to its PR. It is deliberately *not* under version control: keeping it tracked would force every PR to edit a file unrelated to its own concern. Pull request history is the authoritative record; `TASKS.md` is just a readable index of it.
 
 ### Pull request flow
 
@@ -297,7 +293,7 @@ All changes reach `main` through a PR. The sequence is fixed:
 7. The user reviews, approves, and merges. Claude never merges, never approves, never force-pushes over a branch under review.
 
 - **Squash merge only.** One commit per PR on `main`, so the PR title becomes the commit message — meaning the PR title must be agreed exactly like a commit message.
-- Merged branches are deleted; `TASKS.md` and the PR history preserve the record.
+- Merged branches are deleted; the PR history preserves the record.
 - CI must be green before a PR is mergeable. A red PR gets fixed, not merged.
 - Review feedback is addressed with new commits on the same branch, not by rewriting history under the reviewer.
 
