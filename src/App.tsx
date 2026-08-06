@@ -11,6 +11,8 @@ import { UndoDeleteToast } from './features/layers/UndoDeleteToast';
 import { CanvasEditor, LayerEditor } from './features/editor/LayerEditor';
 import { PatternLibrary } from './features/presets/PatternLibrary';
 import { useAutosave } from './features/persistence/useAutosave';
+import { useShareLink } from './features/share/useShareLink';
+import { ShareBanner } from './features/share/ShareBanner';
 
 const Layout = styled.div`
   display: grid;
@@ -81,6 +83,7 @@ const Warning = styled.p`
 `;
 
 export default function App() {
+  const incomingLink = useShareLink();
   const storageProblem = useAutosave();
   const preference = useAppSelector(selectThemePreference);
   const prefersDark = usePrefersDark();
@@ -94,6 +97,7 @@ export default function App() {
           <Title>pttrnly</Title>
           <Tagline>Complex CSS backgrounds from stacked layers.</Tagline>
         </Header>
+        <ShareBanner incoming={incomingLink} />
         {storageProblem ? (
           <Warning role="status" aria-live="polite">
             {storageProblem}

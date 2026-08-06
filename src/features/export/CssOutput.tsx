@@ -6,6 +6,7 @@ import type { OutputMode } from '../../domain/css';
 import { SegmentedControl } from '../../components/SegmentedControl';
 import { colorFormatChanged, outputModeChanged } from '../pattern/patternSlice';
 import { selectColorFormat, selectGeneratedCss, selectOutputMode } from '../pattern/selectors';
+import { useShareUrl } from '../share/useShareLink';
 
 const Panel = styled.section`
   display: grid;
@@ -98,6 +99,19 @@ export function CssOutput() {
     }, 2500);
   }, []);
 
+  const shareUrl = useShareUrl();
+
+  const copyLink = useCallback(() => {
+    navigator.clipboard.writeText(shareUrl).then(
+      () => {
+        announce('Share link copied');
+      },
+      () => {
+        announce('Copy failed — select the link and copy manually');
+      },
+    );
+  }, [announce, shareUrl]);
+
   const copy = useCallback(() => {
     navigator.clipboard.writeText(css).then(
       () => {
@@ -153,6 +167,9 @@ export function CssOutput() {
       <CopyRow>
         <CopyButton type="button" onClick={copy}>
           Copy CSS
+        </CopyButton>
+        <CopyButton type="button" onClick={copyLink}>
+          Copy share link
         </CopyButton>
         <Status role="status" aria-live="polite">
           {status}
