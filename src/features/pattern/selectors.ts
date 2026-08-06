@@ -8,6 +8,16 @@ export const selectOutputMode = (state: RootState) => state.pattern.output.mode;
 export const selectColorFormat = (state: RootState) => state.pattern.output.colorFormat;
 export const selectSelectedLayerId = (state: RootState) => state.pattern.selectedLayerId;
 export const selectSelectedStopIndex = (state: RootState) => state.pattern.selectedStopIndex;
+export const selectLibrary = (state: RootState) => state.pattern.library;
+
+/**
+ * Derived by comparison rather than a flag, so it cannot drift out of sync
+ * with the pattern it describes.
+ */
+export const selectHasUnsavedChanges = createSelector(
+  [selectPattern, (state: RootState) => state.pattern.baseline],
+  (pattern, baseline) => JSON.stringify(pattern) !== baseline,
+);
 
 const selectCssOptions = createSelector(
   [selectOutputMode, selectColorFormat],
