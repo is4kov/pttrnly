@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { useAppSelector } from '../../app/hooks';
 import { LayerRow } from './LayerRow';
+import { AddLayerMenu } from './AddLayerMenu';
 import { selectLayerIds } from '../pattern/selectors';
 
 const Panel = styled.section`
@@ -39,6 +40,7 @@ export function LayerList() {
     <Panel aria-labelledby="layers-heading">
       <h2 id="layers-heading">Layers</h2>
       <Hint>The top layer paints over the ones below it, matching the CSS order.</Hint>
+      <AddLayerMenu />
 
       {ids.length === 0 ? (
         <Empty>No layers yet. Only the base colour is showing.</Empty>

@@ -8,6 +8,7 @@ import { PreviewSurface } from './features/preview/PreviewSurface';
 import { CssOutput } from './features/export/CssOutput';
 import { LayerList } from './features/layers/LayerList';
 import { UndoDeleteToast } from './features/layers/UndoDeleteToast';
+import { LayerEditor } from './features/editor/LayerEditor';
 
 const Layout = styled.div`
   display: grid;
@@ -56,6 +57,19 @@ const Stack = styled.div`
   align-content: start;
 `;
 
+/**
+ * The result stays on screen while you work down a long editor panel —
+ * otherwise you are editing a pattern you cannot see.
+ */
+const StickyStack = styled(Stack)`
+  ${({ theme }) => theme.media.from('lg')} {
+    position: sticky;
+    top: ${({ theme }) => theme.space.lg}px;
+    max-height: calc(100dvh - ${({ theme }) => theme.space.xxl}px);
+    overflow-y: auto;
+  }
+`;
+
 export default function App() {
   const preference = useAppSelector(selectThemePreference);
   const prefersDark = usePrefersDark();
@@ -70,11 +84,14 @@ export default function App() {
           <Tagline>Complex CSS backgrounds from stacked layers.</Tagline>
         </Header>
         <Panes>
-          <Stack>
+          <StickyStack>
             <PreviewSurface />
             <CssOutput />
+          </StickyStack>
+          <Stack>
+            <LayerList />
+            <LayerEditor />
           </Stack>
-          <LayerList />
         </Panes>
         <UndoDeleteToast />
       </Layout>
