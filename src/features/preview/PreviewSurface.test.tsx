@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { PreviewSurface } from './PreviewSurface';
-import { makeStore, renderWithProviders, type TestStore } from '../../test/render';
+import { makeStore, patternStateFor, renderWithProviders, type TestStore } from '../../test/render';
 import { layerVisibilityToggled } from '../pattern/patternSlice';
 import { starterPattern } from '../pattern/starterPattern';
 import { makePattern, makeRadialLayer, makeSolidLayer } from '../../test/factories';
@@ -13,14 +13,7 @@ import type { Pattern } from '../../domain/types';
  * Real rendering of modern syntax belongs in Playwright.
  */
 function storeWith(pattern: Pattern): TestStore {
-  return makeStore({
-    pattern: {
-      pattern,
-      selectedLayerId: pattern.layers[0]?.id ?? null,
-      lastRemoved: null,
-      output: { mode: 'longhand', colorFormat: 'hex' },
-    },
-  });
+  return makeStore({ pattern: patternStateFor(pattern) });
 }
 
 describe('PreviewSurface', () => {

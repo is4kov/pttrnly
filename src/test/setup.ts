@@ -45,6 +45,12 @@ beforeEach(() => {
     return `00000000-0000-4000-8000-${String(uuidCounter).padStart(12, '0')}`;
   });
 
+  // jsdom implements no pointer capture, so any component using it would throw
+  // on mount or interaction. Real drag behaviour is covered in Playwright.
+  Element.prototype.setPointerCapture = vi.fn();
+  Element.prototype.releasePointerCapture = vi.fn();
+  Element.prototype.hasPointerCapture = vi.fn(() => false);
+
   // jsdom has no real clipboard. Verify actual copy behaviour in Playwright.
   Object.defineProperty(navigator, 'clipboard', {
     configurable: true,

@@ -2,6 +2,10 @@ import { createSlice, nanoid, type PayloadAction } from '@reduxjs/toolkit';
 import type { ColorFormat } from '../../domain/color';
 import type { OutputMode } from '../../domain/css';
 import { createLayer } from '../../domain/defaults';
+import { MAX_STOPS, MIN_STOPS, sortStops } from '../../domain/stops';
+import type { Color } from '../../domain/color';
+import type { Length } from '../../domain/length';
+import type { GradientStop } from '../../domain/types';
 import type { Layer, LayerKind, Pattern } from '../../domain/types';
 import { starterPattern } from './starterPattern';
 
@@ -10,6 +14,8 @@ export type RemovedLayer = { layer: Layer; index: number };
 export type PatternState = {
   pattern: Pattern;
   selectedLayerId: string | null;
+  /** Index into the selected layer's stop list; the stop being edited. */
+  selectedStopIndex: number;
   /** The most recent deletion, kept so it can be undone while the toast is up. */
   lastRemoved: RemovedLayer | null;
   output: {
@@ -21,9 +27,17 @@ export type PatternState = {
 const initialState: PatternState = {
   pattern: starterPattern,
   selectedLayerId: starterPattern.layers[0]?.id ?? null,
+  selectedStopIndex: 0,
   lastRemoved: null,
   output: { mode: 'longhand', colorFormat: 'oklch' },
 };
+
+/** Narrows to a layer that actually has stops, so the reducers stay total. */
+function gradientStops(state: PatternState, layerId: string): GradientStop[] | null {
+  const layer = state.pattern.layers.find((candidate) => candidate.id === layerId);
+  if (!layer) return null;
+  return 'stops' in layer ? layer.stops : null;
+}
 
 /**
  * Actions describe the edit semantically rather than replacing state wholesale,
@@ -43,6 +57,70 @@ const patternSlice = createSlice({
 
     layerSelected(state, action: PayloadAction<string>) {
       state.selectedLayerId = action.payload;
+      state.selectedStopIndex = 0;
+    },
+
+    stopSelected(state, action: PayloadAction<number>) {
+      state.selectedStopIndex = Math.max(action.payload, 0);
+    },
+
+    stopMoved(state, action: PayloadAction<{ layerId: string; index: number; position: Length }>) {
+      const { layerId, index, position } = action.payload;
+      const stops = gradientStops(state, layerId);
+      const stop = stops?.[index];
+      if (!stops || !stop) return;
+
+      stop.position = position;
+    },
+
+    stopColorChanged(
+      state,
+      action: PayloadAction<{ layerId: string; index: number; color: Color }>,
+    ) {
+      const { layerId, index, color } = action.payload;
+      const stop = gradientStops(state, layerId)?.[index];
+      if (!stop) return;
+
+      stop.color = color;
+    },
+
+    /**
+     * Re-sorts after a drag. Sorting mid-drag would swap the index under the
+     * pointer; CSS meanwhile clamps an out-of-order stop to its predecessor,
+     * which reads as the handle sticking. So it happens once, on release.
+     */
+    stopsNormalised(state, action: PayloadAction<{ layerId: string }>) {
+      const stops = gradientStops(state, action.payload.layerId);
+      if (!stops) return;
+
+      const moved = stops[state.selectedStopIndex];
+      const sorted = sortStops(stops);
+      stops.splice(0, stops.length, ...sorted);
+
+      if (moved) {
+        state.selectedStopIndex = sorted.indexOf(moved);
+      }
+    },
+
+    stopAdded(state, action: PayloadAction<{ layerId: string; stop: GradientStop }>) {
+      const { layerId, stop } = action.payload;
+      const stops = gradientStops(state, layerId);
+      if (!stops || stops.length >= MAX_STOPS) return;
+
+      stops.push(stop);
+      const sorted = sortStops(stops);
+      stops.splice(0, stops.length, ...sorted);
+      state.selectedStopIndex = sorted.findIndex((candidate) => candidate === stop);
+    },
+
+    /** CSS needs two stops for a valid gradient, so the last pair cannot be removed. */
+    stopRemoved(state, action: PayloadAction<{ layerId: string; index: number }>) {
+      const { layerId, index } = action.payload;
+      const stops = gradientStops(state, layerId);
+      if (!stops || stops.length <= MIN_STOPS) return;
+
+      stops.splice(index, 1);
+      state.selectedStopIndex = Math.min(index, stops.length - 1);
     },
 
     layerAdded: {
@@ -148,6 +226,12 @@ export const {
   outputModeChanged,
   colorFormatChanged,
   layerSelected,
+  stopSelected,
+  stopMoved,
+  stopColorChanged,
+  stopAdded,
+  stopRemoved,
+  stopsNormalised,
   layerAdded,
   layerUpdated,
   layerVisibilityToggled,

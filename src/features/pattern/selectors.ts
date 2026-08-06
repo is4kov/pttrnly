@@ -7,6 +7,7 @@ export const selectPattern = (state: RootState) => state.pattern.pattern;
 export const selectOutputMode = (state: RootState) => state.pattern.output.mode;
 export const selectColorFormat = (state: RootState) => state.pattern.output.colorFormat;
 export const selectSelectedLayerId = (state: RootState) => state.pattern.selectedLayerId;
+export const selectSelectedStopIndex = (state: RootState) => state.pattern.selectedStopIndex;
 
 const selectCssOptions = createSelector(
   [selectOutputMode, selectColorFormat],

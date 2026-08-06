@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { LayerEditor } from './LayerEditor';
 import { AddLayerMenu } from '../layers/AddLayerMenu';
-import { makeStore, renderWithProviders, type TestStore } from '../../test/render';
+import { makeStore, patternStateFor, renderWithProviders, type TestStore } from '../../test/render';
 import { makeConicLayer, makeLinearLayer, makePattern, makeSolidLayer } from '../../test/factories';
 import { makeImageLayer, makeRadialLayer } from '../../test/factories';
 import type { Layer } from '../../domain/types';
@@ -11,25 +11,15 @@ import type { Layer } from '../../domain/types';
 function storeWith(layers: Layer[], selectedIndex = 0): TestStore {
   const pattern = makePattern(layers);
   return makeStore({
-    pattern: {
-      pattern,
+    pattern: patternStateFor(pattern, {
       selectedLayerId: pattern.layers[selectedIndex]?.id ?? null,
-      lastRemoved: null,
-      output: { mode: 'longhand', colorFormat: 'hex' },
-    },
+    }),
   });
 }
 
 describe('LayerEditor', () => {
   it('prompts when nothing is selected', () => {
-    const store = makeStore({
-      pattern: {
-        pattern: makePattern([]),
-        selectedLayerId: null,
-        lastRemoved: null,
-        output: { mode: 'longhand', colorFormat: 'hex' },
-      },
-    });
+    const store = makeStore({ pattern: patternStateFor(makePattern([])) });
 
     renderWithProviders(<LayerEditor />, { store });
 
@@ -202,14 +192,7 @@ describe('AddLayerMenu', () => {
 
   it('recovers from the empty state', async () => {
     const user = userEvent.setup();
-    const store = makeStore({
-      pattern: {
-        pattern: makePattern([]),
-        selectedLayerId: null,
-        lastRemoved: null,
-        output: { mode: 'longhand', colorFormat: 'hex' },
-      },
-    });
+    const store = makeStore({ pattern: patternStateFor(makePattern([])) });
 
     renderWithProviders(<AddLayerMenu />, { store });
 
