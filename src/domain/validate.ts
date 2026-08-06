@@ -11,7 +11,8 @@ export const LIMITS = {
   px: { min: -10_000, max: 10_000 },
   angle: { min: -3600, max: 3600 },
   opacity: { min: 0, max: 1 },
-  stopsPerLayer: { min: 1, max: 64 },
+  /** CSS needs two stops for a valid gradient; the cap is our own guard. */
+  stopsPerLayer: { min: 2, max: 64 },
   layersPerPattern: { min: 0, max: 200 },
   urlLength: { max: 4096 },
 } as const;

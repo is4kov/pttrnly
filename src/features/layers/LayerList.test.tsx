@@ -3,19 +3,12 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { LayerList } from './LayerList';
 import { UndoDeleteToast } from './UndoDeleteToast';
-import { makeStore, renderWithProviders, type TestStore } from '../../test/render';
+import { makeStore, patternStateFor, renderWithProviders, type TestStore } from '../../test/render';
 import { starterPattern } from '../pattern/starterPattern';
 import { makePattern } from '../../test/factories';
 
 function hexStore(): TestStore {
-  return makeStore({
-    pattern: {
-      pattern: starterPattern,
-      selectedLayerId: starterPattern.layers[0]?.id ?? null,
-      lastRemoved: null,
-      output: { mode: 'longhand', colorFormat: 'hex' },
-    },
-  });
+  return makeStore({ pattern: patternStateFor(starterPattern) });
 }
 
 describe('LayerList', () => {
@@ -88,14 +81,7 @@ describe('LayerList', () => {
   });
 
   it('shows an empty state with no layers', () => {
-    const store = makeStore({
-      pattern: {
-        pattern: makePattern([]),
-        selectedLayerId: null,
-        lastRemoved: null,
-        output: { mode: 'longhand', colorFormat: 'hex' },
-      },
-    });
+    const store = makeStore({ pattern: patternStateFor(makePattern([])) });
 
     renderWithProviders(<LayerList />, { store });
 

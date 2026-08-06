@@ -2,12 +2,15 @@ import { useCallback } from 'react';
 import styled from 'styled-components';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import { ColorField } from '../../components/ColorField';
+import { StopBar } from './StopBar';
+import { StopTabs } from './StopTabs';
 import { NumberField, SelectField, TextField } from '../../components/Field';
 import { LengthField, type LengthRange } from '../../components/LengthField';
 import { isAllowedImageUrl } from '../../domain/validate';
 import { BLEND_MODES, RADIAL_EXTENTS, REPEAT_MODES } from '../../domain/types';
 import type {
   BlendMode,
+  GradientStop,
   Layer,
   LayerSize,
   RadialExtent,
@@ -17,7 +20,11 @@ import type {
 import { pct } from '../../domain/length';
 import type { LengthUnit } from '../../domain/length';
 import { layerUpdated } from '../pattern/patternSlice';
-import { selectLayerById, selectSelectedLayerId } from '../pattern/selectors';
+import {
+  selectLayerById,
+  selectSelectedLayerId,
+  selectSelectedStopIndex,
+} from '../pattern/selectors';
 
 const Panel = styled.section`
   display: grid;
@@ -181,6 +188,8 @@ export function LayerEditor() {
       </Group>
 
       <KindFields layer={layer} update={update} />
+
+      {'stops' in layer && <StopsSection layerId={layer.id} stops={layer.stops} />}
     </Panel>
   );
 }
@@ -364,4 +373,17 @@ function KindFields({
       );
     }
   }
+}
+
+function StopsSection({ layerId, stops }: { layerId: string; stops: GradientStop[] }) {
+  const selectedIndex = useAppSelector(selectSelectedStopIndex);
+  const index = Math.min(selectedIndex, stops.length - 1);
+
+  return (
+    <Group>
+      <GroupTitle>Stops</GroupTitle>
+      <StopBar layerId={layerId} stops={stops} selectedIndex={index} />
+      <StopTabs layerId={layerId} stops={stops} selectedIndex={index} />
+    </Group>
+  );
 }

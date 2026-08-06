@@ -7,6 +7,8 @@ import { themeReducer } from '../features/theme/themeSlice';
 import { patternReducer } from '../features/pattern/patternSlice';
 import { lightTheme } from '../styles/theme';
 import type { RootState } from '../app/store';
+import type { PatternState } from '../features/pattern/patternSlice';
+import type { Pattern } from '../domain/types';
 
 export function makeStore(preloadedState?: Partial<RootState>) {
   return configureStore({
@@ -16,6 +18,24 @@ export function makeStore(preloadedState?: Partial<RootState>) {
 }
 
 export type TestStore = ReturnType<typeof makeStore>;
+
+/**
+ * Builds pattern state from a pattern. Tests go through this so adding a field
+ * to PatternState does not mean editing every test that preloads state.
+ */
+export function patternStateFor(
+  pattern: Pattern,
+  overrides: Partial<PatternState> = {},
+): PatternState {
+  return {
+    pattern,
+    selectedLayerId: pattern.layers[0]?.id ?? null,
+    selectedStopIndex: 0,
+    lastRemoved: null,
+    output: { mode: 'longhand', colorFormat: 'hex' },
+    ...overrides,
+  };
+}
 
 type Options = Omit<RenderOptions, 'wrapper'> & {
   store?: TestStore;
