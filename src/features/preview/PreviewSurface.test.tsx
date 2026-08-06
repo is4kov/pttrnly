@@ -14,7 +14,12 @@ import type { Pattern } from '../../domain/types';
  */
 function storeWith(pattern: Pattern): TestStore {
   return makeStore({
-    pattern: { pattern, output: { mode: 'longhand', colorFormat: 'hex' } },
+    pattern: {
+      pattern,
+      selectedLayerId: pattern.layers[0]?.id ?? null,
+      lastRemoved: null,
+      output: { mode: 'longhand', colorFormat: 'hex' },
+    },
   });
 }
 
