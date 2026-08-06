@@ -71,3 +71,19 @@ describe('CssOutput', () => {
     });
   });
 });
+
+describe('sharing', () => {
+  it('copies a link containing the pattern', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText');
+
+    renderWithProviders(<CssOutput />);
+
+    await user.click(screen.getByRole('button', { name: 'Copy share link' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('Share link copied');
+    });
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('#p='));
+  });
+});
