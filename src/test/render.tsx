@@ -29,6 +29,8 @@ export function patternStateFor(
 ): PatternState {
   return {
     pattern,
+    baseline: JSON.stringify(pattern),
+    library: [],
     selectedLayerId: pattern.layers[0]?.id ?? null,
     selectedStopIndex: 0,
     lastRemoved: null,

@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import { ColorField } from '../../components/ColorField';
 import { StopBar } from './StopBar';
 import { StopTabs } from './StopTabs';
+import { ColorPicker } from '../../components/ColorPicker';
 import { NumberField, SelectField, TextField } from '../../components/Field';
 import { LengthField, type LengthRange } from '../../components/LengthField';
 import { isAllowedImageUrl } from '../../domain/validate';
@@ -19,9 +20,10 @@ import type {
 } from '../../domain/types';
 import { pct } from '../../domain/length';
 import type { LengthUnit } from '../../domain/length';
-import { layerUpdated } from '../pattern/patternSlice';
+import { baseColorChanged, layerUpdated } from '../pattern/patternSlice';
 import {
   selectLayerById,
+  selectPattern,
   selectSelectedLayerId,
   selectSelectedStopIndex,
 } from '../pattern/selectors';
@@ -385,5 +387,27 @@ function StopsSection({ layerId, stops }: { layerId: string; stops: GradientStop
       <StopBar layerId={layerId} stops={stops} selectedIndex={index} />
       <StopTabs layerId={layerId} stops={stops} selectedIndex={index} />
     </Group>
+  );
+}
+
+/** The colour beneath every layer. It lives on the canvas, not in the stack. */
+export function CanvasEditor() {
+  const dispatch = useAppDispatch();
+  const pattern = useAppSelector(selectPattern);
+
+  return (
+    <Panel aria-labelledby="canvas-heading">
+      <h2 id="canvas-heading">Canvas</h2>
+      <Group>
+        <ColorPicker
+          label="Base colour"
+          value={pattern.canvas.baseColor}
+          onChange={(baseColor) => {
+            dispatch(baseColorChanged(baseColor));
+          }}
+        />
+        <Note>Painted beneath every layer, so only transparent areas reveal it.</Note>
+      </Group>
+    </Panel>
   );
 }

@@ -8,7 +8,9 @@ import { PreviewSurface } from './features/preview/PreviewSurface';
 import { CssOutput } from './features/export/CssOutput';
 import { LayerList } from './features/layers/LayerList';
 import { UndoDeleteToast } from './features/layers/UndoDeleteToast';
-import { LayerEditor } from './features/editor/LayerEditor';
+import { CanvasEditor, LayerEditor } from './features/editor/LayerEditor';
+import { PatternLibrary } from './features/presets/PatternLibrary';
+import { useAutosave } from './features/persistence/useAutosave';
 
 const Layout = styled.div`
   display: grid;
@@ -70,7 +72,16 @@ const StickyStack = styled(Stack)`
   }
 `;
 
+const Warning = styled.p`
+  margin: 0;
+  padding: ${({ theme }) => theme.space.sm}px ${({ theme }) => theme.space.md}px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.sm};
+  font-size: 0.8125rem;
+`;
+
 export default function App() {
+  const storageProblem = useAutosave();
   const preference = useAppSelector(selectThemePreference);
   const prefersDark = usePrefersDark();
   const isDark = preference === 'system' ? prefersDark : preference === 'dark';
@@ -83,6 +94,11 @@ export default function App() {
           <Title>pttrnly</Title>
           <Tagline>Complex CSS backgrounds from stacked layers.</Tagline>
         </Header>
+        {storageProblem ? (
+          <Warning role="status" aria-live="polite">
+            {storageProblem}
+          </Warning>
+        ) : null}
         <Panes>
           <StickyStack>
             <PreviewSurface />
@@ -91,6 +107,8 @@ export default function App() {
           <Stack>
             <LayerList />
             <LayerEditor />
+            <CanvasEditor />
+            <PatternLibrary />
           </Stack>
         </Panes>
         <UndoDeleteToast />

@@ -8,11 +8,19 @@ import type { Length } from '../../domain/length';
 import type { GradientStop } from '../../domain/types';
 import type { Layer, LayerKind, Pattern } from '../../domain/types';
 import { starterPattern } from './starterPattern';
+import { loadSession, type SavedPattern } from '../persistence/storage';
+import type { Canvas } from '../../domain/types';
 
 export type RemovedLayer = { layer: Layer; index: number };
 
 export type PatternState = {
   pattern: Pattern;
+  /**
+   * Snapshot of the pattern as last loaded or saved. Comparing against it is
+   * how "unsaved changes" is derived, rather than a flag that can drift.
+   */
+  baseline: string;
+  library: SavedPattern[];
   selectedLayerId: string | null;
   /** Index into the selected layer's stop list; the stop being edited. */
   selectedStopIndex: number;
@@ -24,9 +32,14 @@ export type PatternState = {
   };
 };
 
+const restored = loadSession();
+const initial = restored ?? starterPattern;
+
 const initialState: PatternState = {
-  pattern: starterPattern,
-  selectedLayerId: starterPattern.layers[0]?.id ?? null,
+  pattern: initial,
+  baseline: JSON.stringify(initial),
+  library: [],
+  selectedLayerId: initial.layers[0]?.id ?? null,
   selectedStopIndex: 0,
   lastRemoved: null,
   output: { mode: 'longhand', colorFormat: 'oklch' },
@@ -53,6 +66,31 @@ const patternSlice = createSlice({
 
     colorFormatChanged(state, action: PayloadAction<ColorFormat>) {
       state.output.colorFormat = action.payload;
+    },
+
+    /** Replaces the whole pattern — loading a preset or a saved design. */
+    patternLoaded(state, action: PayloadAction<Pattern>) {
+      state.pattern = action.payload;
+      state.baseline = JSON.stringify(action.payload);
+      state.selectedLayerId = action.payload.layers[0]?.id ?? null;
+      state.selectedStopIndex = 0;
+    },
+
+    baseColorChanged(state, action: PayloadAction<Canvas['baseColor']>) {
+      state.pattern.canvas.baseColor = action.payload;
+    },
+
+    libraryLoaded(state, action: PayloadAction<SavedPattern[]>) {
+      state.library = action.payload;
+    },
+
+    patternSaved(state, action: PayloadAction<SavedPattern>) {
+      state.library.unshift(action.payload);
+      state.baseline = JSON.stringify(state.pattern);
+    },
+
+    savedPatternRemoved(state, action: PayloadAction<string>) {
+      state.library = state.library.filter((entry) => entry.id !== action.payload);
     },
 
     layerSelected(state, action: PayloadAction<string>) {
@@ -225,6 +263,11 @@ const patternSlice = createSlice({
 export const {
   outputModeChanged,
   colorFormatChanged,
+  patternLoaded,
+  baseColorChanged,
+  libraryLoaded,
+  patternSaved,
+  savedPatternRemoved,
   layerSelected,
   stopSelected,
   stopMoved,
