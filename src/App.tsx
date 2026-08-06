@@ -6,6 +6,8 @@ import { selectThemePreference } from './features/theme/selectors';
 import { usePrefersDark } from './features/theme/usePrefersDark';
 import { PreviewSurface } from './features/preview/PreviewSurface';
 import { CssOutput } from './features/export/CssOutput';
+import { LayerList } from './features/layers/LayerList';
+import { UndoDeleteToast } from './features/layers/UndoDeleteToast';
 
 const Layout = styled.div`
   display: grid;
@@ -48,6 +50,12 @@ const Panes = styled.div`
   }
 `;
 
+const Stack = styled.div`
+  display: grid;
+  gap: ${({ theme }) => theme.space.xl}px;
+  align-content: start;
+`;
+
 export default function App() {
   const preference = useAppSelector(selectThemePreference);
   const prefersDark = usePrefersDark();
@@ -62,9 +70,13 @@ export default function App() {
           <Tagline>Complex CSS backgrounds from stacked layers.</Tagline>
         </Header>
         <Panes>
-          <PreviewSurface />
-          <CssOutput />
+          <Stack>
+            <PreviewSurface />
+            <CssOutput />
+          </Stack>
+          <LayerList />
         </Panes>
+        <UndoDeleteToast />
       </Layout>
     </ThemeProvider>
   );
