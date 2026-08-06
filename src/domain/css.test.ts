@@ -138,7 +138,28 @@ describe('layer kinds', () => {
     const oklch = makePattern([makeLinearLayer({ interpolation: 'oklch' })]);
 
     expect(generateCss(srgb, longhandHex)).not.toContain('in oklch');
-    expect(generateCss(oklch, longhandHex)).toContain('linear-gradient(in oklch, 90deg');
+    expect(generateCss(oklch, longhandHex)).toContain('linear-gradient(90deg in oklch,');
+  });
+
+  it('places the interpolation hint where browsers accept it', () => {
+    // The hint joins the angle/position part; a comma before the stops follows it.
+    // `linear-gradient(in oklch, 90deg, …)` is invalid and silently drops the layer.
+    const linear = makePattern([makeLinearLayer({ interpolation: 'oklch' })]);
+    const radial = makePattern([makeRadialLayer({ interpolation: 'oklch' })]);
+    const conic = makePattern([makeConicLayer({ interpolation: 'oklch' })]);
+
+    expect(generateCss(linear, longhandHex)).toContain('linear-gradient(90deg in oklch, #');
+    expect(generateCss(radial, longhandHex)).toContain(
+      'radial-gradient(circle farthest-corner at 50% 50% in oklch, #',
+    );
+    expect(generateCss(conic, longhandHex)).toContain(
+      'conic-gradient(from 0deg at 50% 50% in oklch, #',
+    );
+
+    // The invalid shape is the hint sitting immediately after the opening paren.
+    for (const pattern of [linear, radial, conic]) {
+      expect(generateCss(pattern, longhandHex)).not.toContain('(in oklch,');
+    }
   });
 });
 

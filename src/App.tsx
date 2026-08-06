@@ -4,29 +4,48 @@ import { darkTheme, lightTheme } from './styles/theme';
 import { useAppSelector } from './app/hooks';
 import { selectThemePreference } from './features/theme/selectors';
 import { usePrefersDark } from './features/theme/usePrefersDark';
+import { PreviewSurface } from './features/preview/PreviewSurface';
+import { CssOutput } from './features/export/CssOutput';
 
-const Layout = styled.main`
+const Layout = styled.div`
   display: grid;
-  gap: ${({ theme }) => theme.space.lg}px;
-  padding: ${({ theme }) => theme.space.xl}px;
-  max-width: 60rem;
+  gap: ${({ theme }) => theme.space.xl}px;
+  padding: ${({ theme }) => theme.space.lg}px;
+  max-width: 76rem;
   margin: 0 auto;
+
+  ${({ theme }) => theme.media.from('md')} {
+    padding: ${({ theme }) => theme.space.xxl}px;
+  }
+`;
+
+const Header = styled.header`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: ${({ theme }) => theme.space.md}px;
 `;
 
 const Title = styled.h1`
   margin: 0;
   font-size: 1.5rem;
   letter-spacing: -0.02em;
-
-  ${({ theme }) => theme.media.from('md')} {
-    font-size: 2rem;
-  }
 `;
 
-const Lede = styled.p`
+const Tagline = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.textMuted};
-  max-width: 48ch;
+  font-size: 0.875rem;
+`;
+
+const Panes = styled.div`
+  display: grid;
+  gap: ${({ theme }) => theme.space.xl}px;
+
+  ${({ theme }) => theme.media.from('lg')} {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+  }
 `;
 
 export default function App() {
@@ -38,11 +57,14 @@ export default function App() {
     <ThemeProvider theme={isDark ? darkTheme : lightTheme}>
       <GlobalStyle />
       <Layout>
-        <Title>pttrnly</Title>
-        <Lede>
-          Compose complex CSS backgrounds from stacked gradient layers. The editor lands in a later
-          task — this is the application shell.
-        </Lede>
+        <Header>
+          <Title>pttrnly</Title>
+          <Tagline>Complex CSS backgrounds from stacked layers.</Tagline>
+        </Header>
+        <Panes>
+          <PreviewSurface />
+          <CssOutput />
+        </Panes>
       </Layout>
     </ThemeProvider>
   );
