@@ -74,23 +74,31 @@ function formatStops(stops: readonly GradientStop[], opacity: number, format: Co
     .join(', ');
 }
 
-/** `in oklch` keeps midpoints vivid; omitted for srgb since that is the CSS default. */
-const interpolationPrefix = (layer: { interpolation: 'srgb' | 'oklch' }): string =>
-  layer.interpolation === 'oklch' ? 'in oklch, ' : '';
+/**
+ * `in oklch` keeps midpoints vivid; omitted for srgb since that is the CSS default.
+ *
+ * Placement matters: the grammar combines <color-interpolation-method> with the
+ * angle/position part, and only then takes a comma before the colour stops. So it
+ * is `linear-gradient(90deg in oklch, …)`, never `linear-gradient(in oklch, 90deg, …)`
+ * — browsers reject the latter outright and drop the whole layer.
+ */
+const interpolationSuffix = (layer: { interpolation: 'srgb' | 'oklch' }): string =>
+  layer.interpolation === 'oklch' ? ' in oklch' : '';
 
 function linearGradientImage(layer: LinearGradientLayer, format: ColorFormat): string {
-  const head = `${degrees(layer.angle)}, `;
-  return `${layer.kind}(${interpolationPrefix(layer)}${head}${formatStops(layer.stops, layer.opacity, format)})`;
+  const head = `${degrees(layer.angle)}${interpolationSuffix(layer)}, `;
+  return `${layer.kind}(${head}${formatStops(layer.stops, layer.opacity, format)})`;
 }
 
 function radialGradientImage(layer: RadialGradientLayer, format: ColorFormat): string {
-  const head = `${layer.shape} ${formatRadialSize(layer.radialSize)} at ${formatPosition(layer.center)}, `;
-  return `${layer.kind}(${interpolationPrefix(layer)}${head}${formatStops(layer.stops, layer.opacity, format)})`;
+  const shape = `${layer.shape} ${formatRadialSize(layer.radialSize)}`;
+  const head = `${shape} at ${formatPosition(layer.center)}${interpolationSuffix(layer)}, `;
+  return `${layer.kind}(${head}${formatStops(layer.stops, layer.opacity, format)})`;
 }
 
 function conicGradientImage(layer: ConicGradientLayer, format: ColorFormat): string {
-  const head = `from ${degrees(layer.fromAngle)} at ${formatPosition(layer.center)}, `;
-  return `${layer.kind}(${interpolationPrefix(layer)}${head}${formatStops(layer.stops, layer.opacity, format)})`;
+  const head = `from ${degrees(layer.fromAngle)} at ${formatPosition(layer.center)}${interpolationSuffix(layer)}, `;
+  return `${layer.kind}(${head}${formatStops(layer.stops, layer.opacity, format)})`;
 }
 
 /**
