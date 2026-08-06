@@ -1,7 +1,8 @@
 import { createSlice, nanoid, type PayloadAction } from '@reduxjs/toolkit';
 import type { ColorFormat } from '../../domain/color';
 import type { OutputMode } from '../../domain/css';
-import type { Layer, Pattern } from '../../domain/types';
+import { createLayer } from '../../domain/defaults';
+import type { Layer, LayerKind, Pattern } from '../../domain/types';
 import { starterPattern } from './starterPattern';
 
 export type RemovedLayer = { layer: Layer; index: number };
@@ -42,6 +43,34 @@ const patternSlice = createSlice({
 
     layerSelected(state, action: PayloadAction<string>) {
       state.selectedLayerId = action.payload;
+    },
+
+    layerAdded: {
+      reducer(state, action: PayloadAction<{ kind: LayerKind; id: string }>) {
+        const layer = createLayer(action.payload.kind, action.payload.id);
+        const at = state.selectedLayerId
+          ? state.pattern.layers.findIndex((candidate) => candidate.id === state.selectedLayerId)
+          : 0;
+
+        state.pattern.layers.splice(Math.max(at, 0), 0, layer);
+        state.selectedLayerId = layer.id;
+      },
+      prepare(kind: LayerKind) {
+        return { payload: { kind, id: nanoid() } };
+      },
+    },
+
+    /**
+     * Semantic property edit. `changes` carries only the fields that moved,
+     * which keeps a future history middleware able to describe what happened.
+     */
+    layerUpdated(state, action: PayloadAction<{ id: string; changes: Partial<Layer> }>) {
+      const layer = state.pattern.layers.find((candidate) => candidate.id === action.payload.id);
+      if (!layer) return;
+
+      // Safe: the panel only ever sends fields valid for this layer's kind, and
+      // `kind` itself is not editable.
+      Object.assign(layer, action.payload.changes);
     },
 
     layerVisibilityToggled(state, action: PayloadAction<string>) {
@@ -119,6 +148,8 @@ export const {
   outputModeChanged,
   colorFormatChanged,
   layerSelected,
+  layerAdded,
+  layerUpdated,
   layerVisibilityToggled,
   layerMoved,
   layerDuplicated,
