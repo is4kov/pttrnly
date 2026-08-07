@@ -1,85 +1,94 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 /**
- * Pointer drag cannot be covered in unit tests — jsdom has no Pointer Events.
- * These specs are the only coverage of the drag path.
+ * Pointer drag cannot be covered by unit tests: jsdom has no layout and no
+ * pointer capture, so overlap, focus and hit-testing are invisible to it.
+ * Every bug in the stop editor so far has lived in exactly this code.
  */
+
+const stopHandles = (page: Page) => page.getByRole('slider', { name: /^Stop \d+$/ });
+
+async function trackBox(page: Page) {
+  const box = await page.getByTestId('stop-track').boundingBox();
+  expect(box).not.toBeNull();
+  if (!box) throw new Error('stop track has no layout');
+  return box;
+}
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  // The starter pattern's top layer is a gradient, so the stop bar is present.
-  await page.getByRole('button', { name: 'Select Cyan glow' }).click();
+  // The starter's top layer is a gradient, so the stop editor is present.
+  await page
+    .getByRole('button', { name: /^Select / })
+    .first()
+    .click();
 });
 
-test('dragging a stop moves it and updates the generated CSS', async ({ page }) => {
-  const handle = page.getByRole('slider', { name: 'Stop 1' });
-  const track = page.getByTestId('stop-track');
+test('dragging a stop to the right increases its position', async ({ page }) => {
+  const handle = stopHandles(page).first();
+  const box = await trackBox(page);
 
-  const before = await handle.getAttribute('aria-valuenow');
-  const box = await track.boundingBox();
-  expect(box).not.toBeNull();
-  if (!box) return;
+  await expect(handle).toHaveAttribute('aria-valuenow', '0');
 
   await handle.hover();
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height / 2, { steps: 10 });
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height / 2, { steps: 12 });
   await page.mouse.up();
 
-  await expect(handle).not.toHaveAttribute('aria-valuenow', before ?? '');
+  // The bug this guards: the track span used to collapse onto the dragged stop,
+  // so a handle could only ever move left.
+  const value = Number(await handle.getAttribute('aria-valuenow'));
+  expect(value).toBeGreaterThan(10);
 });
 
-test('a dragged stop is reflected in the copied CSS', async ({ page }) => {
+test('dragging updates the copied CSS', async ({ page }) => {
   const css = page.locator('pre code');
   const before = await css.textContent();
+  const box = await trackBox(page);
 
-  const track = page.getByTestId('stop-track');
-  const box = await track.boundingBox();
-  expect(box).not.toBeNull();
-  if (!box) return;
-
-  await page.getByRole('slider', { name: 'Stop 2' }).hover();
+  await stopHandles(page).first().hover();
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.4, box.y + box.height / 2, { steps: 10 });
+  await page.mouse.move(box.x + box.width * 0.4, box.y + box.height / 2, { steps: 12 });
   await page.mouse.up();
 
   await expect(css).not.toHaveText(before ?? '');
 });
 
 test('clicking the track adds a stop', async ({ page }) => {
-  const handles = page.getByRole('slider', { name: /^Stop \d$/ });
-  const before = await handles.count();
+  const before = await stopHandles(page).count();
+  const box = await trackBox(page);
 
-  const track = page.getByTestId('stop-track');
-  const box = await track.boundingBox();
-  expect(box).not.toBeNull();
-  if (!box) return;
-
+  // The ramp overlays the track. If it captured pointer events this would do
+  // nothing at all — which is what it used to do.
   await page.mouse.click(box.x + box.width * 0.5, box.y + box.height / 2);
 
-  await expect(handles).toHaveCount(before + 1);
+  await expect(stopHandles(page)).toHaveCount(before + 1);
 });
 
-test('the stop bar is fully operable from the keyboard', async ({ page }) => {
-  const handle = page.getByRole('slider', { name: 'Stop 1' });
+test('clicking a handle focuses it, so the keyboard works straight after', async ({ page }) => {
+  const handle = stopHandles(page).first();
 
-  await handle.focus();
+  await handle.click();
+  await expect(handle).toBeFocused();
+
   await page.keyboard.press('ArrowRight');
-
   await expect(handle).toHaveAttribute('aria-valuenow', '1');
 
   await page.keyboard.press('Shift+ArrowRight');
-
   await expect(handle).toHaveAttribute('aria-valuenow', '11');
 });
 
-test('touch drag works without scrolling the page', async ({ page }) => {
-  const track = page.getByTestId('stop-track');
-  const box = await track.boundingBox();
+test('stop handles are large enough to hit on touch', async ({ page }) => {
+  const box = await stopHandles(page).first().boundingBox();
+
   expect(box).not.toBeNull();
   if (!box) return;
 
-  const handle = page.getByRole('slider', { name: 'Stop 1' });
+  // CLAUDE.md requires a 44px minimum target, with the visual handle smaller.
+  expect(box.width).toBeGreaterThanOrEqual(44);
+  expect(box.height).toBeGreaterThanOrEqual(44);
+});
 
-  // touch-action: none on the handle is what keeps this from panning the page.
-  await expect(handle).toHaveCSS('touch-action', 'none');
+test('the drag surface opts out of touch scrolling', async ({ page }) => {
+  await expect(stopHandles(page).first()).toHaveCSS('touch-action', 'none');
 });
