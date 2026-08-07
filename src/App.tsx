@@ -45,7 +45,9 @@ const Tagline = styled.p`
   font-size: 0.875rem;
 `;
 
-const Panes = styled.div`
+// A <main> landmark, not a div: axe requires exactly one, and without it the
+// whole editor sits outside any landmark and is unreachable by landmark nav.
+const Panes = styled.main`
   display: grid;
   gap: ${({ theme }) => theme.space.xl}px;
 

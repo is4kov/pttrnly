@@ -27,7 +27,9 @@ test('copying CSS puts the generated string on the clipboard', async ({ page, co
 
   await page.getByRole('button', { name: 'Copy CSS' }).click();
 
-  await expect(page.getByRole('status')).toHaveText('Copied to clipboard');
+  // The app has several live regions, so `getByRole('status')` is ambiguous
+  // under strict mode. Assert on the announcement text a user would hear.
+  await expect(page.getByText('Copied to clipboard')).toBeVisible();
 
   const clipboard = await page.evaluate(() => navigator.clipboard.readText());
   expect(clipboard).toContain('background-color:');

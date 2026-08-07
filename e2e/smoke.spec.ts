@@ -42,5 +42,9 @@ test('has no detectable accessibility violations', async ({ page }) => {
 
   const results = await new AxeBuilder({ page }).analyze();
 
-  expect(results.violations).toEqual([]);
+  // Asserting on the raw violations prints ~120 lines of node detail per rule,
+  // which buries the actual finding. Fail on a readable summary instead.
+  expect(
+    results.violations.map((violation) => `${violation.id} (${violation.impact ?? 'unknown'})`),
+  ).toEqual([]);
 });

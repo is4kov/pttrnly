@@ -9,7 +9,11 @@ import { expect, test, type Page } from '@playwright/test';
 const stopHandles = (page: Page) => page.getByRole('slider', { name: /^Stop \d+$/ });
 
 async function trackBox(page: Page) {
-  const box = await page.getByTestId('stop-track').boundingBox();
+  const track = page.getByTestId('stop-track');
+  // `page.mouse` takes raw viewport coordinates and does no scrolling, so the
+  // track has to be on screen before its box means anything.
+  await track.scrollIntoViewIfNeeded();
+  const box = await track.boundingBox();
   expect(box).not.toBeNull();
   if (!box) throw new Error('stop track has no layout');
   return box;
@@ -58,9 +62,12 @@ test('clicking the track adds a stop', async ({ page }) => {
   const before = await stopHandles(page).count();
   const box = await trackBox(page);
 
-  // The ramp overlays the track. If it captured pointer events this would do
-  // nothing at all — which is what it used to do.
-  await page.mouse.click(box.x + box.width * 0.5, box.y + box.height / 2);
+  // Click through the locator, not `page.mouse`: it waits for actionability and
+  // scrolls first. The ramp overlays the track, so if it captured pointer events
+  // this would do nothing at all — which is what it used to do.
+  await page
+    .getByTestId('stop-track')
+    .click({ position: { x: box.width * 0.5, y: box.height / 2 } });
 
   await expect(stopHandles(page)).toHaveCount(before + 1);
 });

@@ -8,15 +8,15 @@ The generated CSS is the product. Everything in the app exists to make that outp
 
 ## Stack
 
-| Concern | Choice |
-|---|---|
-| Framework | React 19 + TypeScript (strict) |
-| Build | Vite, SPA — no SSR |
-| Styling | styled-components v6 |
-| State | Redux Toolkit |
-| Routing | React Router (needed for share-link state) |
-| Tests | Vitest + React Testing Library, Playwright for editor flows, `vitest-axe` / `@axe-core/playwright` for a11y |
-| Lint/format | ESLint (typescript-eslint) + Prettier |
+| Concern     | Choice                                                                                                      |
+| ----------- | ----------------------------------------------------------------------------------------------------------- |
+| Framework   | React 19 + TypeScript (strict)                                                                              |
+| Build       | Vite, SPA — no SSR                                                                                          |
+| Styling     | styled-components v6                                                                                        |
+| State       | Redux Toolkit                                                                                               |
+| Routing     | React Router (needed for share-link state)                                                                  |
+| Tests       | Vitest + React Testing Library, Playwright for editor flows, `vitest-axe` / `@axe-core/playwright` for a11y |
+| Lint/format | ESLint (typescript-eslint) + Prettier                                                                       |
 
 Do not add a UI component library, a CSS framework, or a second styling solution. All styling goes through styled-components.
 
@@ -71,8 +71,8 @@ Every pattern is a versioned document:
 
 ```ts
 type Pattern = {
-  v: number;              // schema version — bump on any breaking shape change
-  layers: Layer[];        // index 0 = TOP-most layer (see CSS ordering note)
+  v: number; // schema version — bump on any breaking shape change
+  layers: Layer[]; // index 0 = TOP-most layer (see CSS ordering note)
   canvas: { width: number; height: number; baseColor: Color };
 };
 ```
@@ -106,8 +106,8 @@ type Color = { l: number; c: number; h: number; alpha: number }; // l 0–1, c 0
 The generated CSS string is the deliverable, so its shape is a product decision, not an implementation detail.
 
 - **Two output modes, user-toggleable in the export panel:**
-  - *Longhand, pretty-printed* (default): separate `background-image` / `background-size` / `background-position` / `background-repeat` declarations, one layer per line, aligned. Readable and easy to hand-edit after pasting.
-  - *Shorthand, compact*: the `background` shorthand. Note the footgun — the shorthand resets `background-color`, so `canvas.baseColor` must be emitted inside it, not as a separate declaration.
+  - _Longhand, pretty-printed_ (default): separate `background-image` / `background-size` / `background-position` / `background-repeat` declarations, one layer per line, aligned. Readable and easy to hand-edit after pasting.
+  - _Shorthand, compact_: the `background` shorthand. Note the footgun — the shorthand resets `background-color`, so `canvas.baseColor` must be emitted inside it, not as a separate declaration.
 - Both modes must produce visually identical rendering. This is a test: for a given pattern, longhand and shorthand outputs render the same.
 - Combined with the color-format toggle, the serializer has a small matrix of modes. Test the matrix, not just the defaults.
 - **Declare a browser baseline** in this file once chosen, and don't emit syntax below it without a fallback. Where a pattern uses something newer than the baseline (e.g. `oklch()`, conic gradients), the export panel shows a short, factual note about support — not a scary warning.
@@ -177,7 +177,7 @@ a11y is a requirement, not a nice-to-have. A feature isn't done if it's mouse-on
 - Visible focus indicators everywhere; never remove outlines without an equal replacement.
 - Color inputs must expose a text field with the color value — pickers alone are not usable without sight, and the app is literally about color.
 - Labels on every control. Icon-only buttons need `aria-label`.
-- App chrome must meet WCAG 2.2 AA contrast. (The user's *generated* pattern is content, not chrome — but where we show a preset's contrast, be accurate.)
+- App chrome must meet WCAG 2.2 AA contrast. (The user's _generated_ pattern is content, not chrome — but where we show a preset's contrast, be accurate.)
 - Automated axe checks run in CI on key screens. Passing axe is the floor, not proof of accessibility — verify keyboard flows manually.
 
 ---
@@ -207,7 +207,7 @@ Budgets (enforced in CI where possible):
 
 Rules:
 
-- Selectors must be narrow. A layer row subscribes to *its* layer, not to `state.layers`. Use memoized/parametric selectors and `createSelector`; never `useAppSelector(state => state.layers)` in a leaf component.
+- Selectors must be narrow. A layer row subscribes to _its_ layer, not to `state.layers`. Use memoized/parametric selectors and `createSelector`; never `useAppSelector(state => state.layers)` in a leaf component.
 - Never return a new array/object from a selector without memoization.
 - Preview updates during a drag go through a throttled/rAF path.
 - Prefer CSS custom properties for values that change at high frequency, so a drag mutates a variable instead of regenerating styles.
@@ -276,9 +276,9 @@ Repository: `https://github.com/is4kov/pttrnly`
 - Branch name: `PTRN-{n}-short-slug` — e.g. `PTRN-4-gradient-stop-editor`. Lowercase kebab slug, a few words.
 - The bracketed form `[PTRN-{n}]` is the prefix for **commit messages and PR titles**, not for branch names (brackets in refs need shell quoting and confuse some tooling).
 
-**Allocating `{n}`:** take the highest `PTRN-` number appearing in *any* pull request on the repo — open, closed, or merged — and add one. Scan PRs rather than branches: merged branches get deleted, PRs do not. Never reuse a number, even from an abandoned task.
+**Allocating `{n}`:** take the highest `PTRN-` number appearing in _any_ pull request on the repo — open, closed, or merged — and add one. Scan PRs rather than branches: merged branches get deleted, PRs do not. Never reuse a number, even from an abandoned task.
 
-**`TASKS.md` is a local, gitignored convenience ledger** — one row per allocated number, with a link to its PR. It is deliberately *not* under version control: keeping it tracked would force every PR to edit a file unrelated to its own concern. Pull request history is the authoritative record; `TASKS.md` is just a readable index of it.
+**`TASKS.md` is a local, gitignored convenience ledger** — one row per allocated number, with a link to its PR. It is deliberately _not_ under version control: keeping it tracked would force every PR to edit a file unrelated to its own concern. Pull request history is the authoritative record; `TASKS.md` is just a readable index of it.
 
 ### Pull request flow
 
