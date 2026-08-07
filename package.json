@@ -13,7 +13,8 @@
     "format:check": "prettier --check .",
     "test": "vitest",
     "test:run": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "size": "node scripts/check-size.mjs"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.5.0",

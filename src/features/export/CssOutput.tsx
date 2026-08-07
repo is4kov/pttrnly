@@ -160,7 +160,11 @@ export function CssOutput() {
         />
       </Controls>
 
-      <Code>
+      {/*
+        The block scrolls when the CSS is long, so it must be focusable or
+        keyboard users cannot scroll it at all (WCAG 2.1.1).
+      */}
+      <Code tabIndex={0}>
         <code>{css}</code>
       </Code>
 
