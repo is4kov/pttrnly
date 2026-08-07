@@ -23,7 +23,7 @@ const KIND_LABELS: Record<LayerKind, string> = {
   image: 'Image',
 };
 
-const Row = styled.li<{ $selected: boolean; $hidden: boolean }>`
+const Row = styled.li<{ $selected: boolean; $hidden: boolean; $dragging: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.space.md}px;
@@ -33,6 +33,42 @@ const Row = styled.li<{ $selected: boolean; $hidden: boolean }>`
     ${({ theme, $selected }) => ($selected ? theme.colors.accent : theme.colors.border)};
   background: ${({ theme }) => theme.colors.bg};
   opacity: ${({ $hidden }) => ($hidden ? 0.55 : 1)};
+  position: relative;
+  z-index: ${({ $dragging }) => ($dragging ? 1 : 0)};
+  box-shadow: ${({ $dragging }) => ($dragging ? '0 8px 24px rgba(0, 0, 0, 0.28)' : 'none')};
+
+  /*
+    Only the rows making room animate. The lifted row already tracks the
+    pointer, so easing it as well would make it lag behind the finger.
+  */
+  @media (prefers-reduced-motion: no-preference) {
+    transition: ${({ $dragging }) => ($dragging ? 'none' : 'transform 160ms ease')};
+  }
+`;
+
+/*
+  Not focusable and hidden from assistive tech on purpose: the move up/down
+  buttons are the accessible reordering path, and a tab stop that does nothing
+  on Enter is worse than no tab stop. See CLAUDE.md "Accessibility".
+*/
+const DragHandle = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: ${({ theme }) => theme.hitTarget};
+  min-height: ${({ theme }) => theme.hitTarget};
+  margin-right: -${({ theme }) => theme.space.sm}px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 0.875rem;
+  cursor: grab;
+  /* Without this the page scrolls instead of the row dragging on touch. */
+  touch-action: none;
+  user-select: none;
+
+  &:active {
+    cursor: grabbing;
+  }
 `;
 
 const Name = styled.button`
@@ -101,9 +137,12 @@ type Props = {
   id: string;
   index: number;
   total: number;
+  dragging: boolean;
+  offset: number;
+  onDragStart: (event: React.PointerEvent<HTMLElement>, id: string, index: number) => void;
 };
 
-function LayerRowComponent({ id, index, total }: Props) {
+function LayerRowComponent({ id, index, total, dragging, offset, onDragStart }: Props) {
   const dispatch = useAppDispatch();
   const layer = useAppSelector((state) => selectLayerById(state, id));
   const selectedId = useAppSelector(selectSelectedLayerId);
@@ -132,12 +171,31 @@ function LayerRowComponent({ id, index, total }: Props) {
     dispatch(layerRemoved(id));
   }, [dispatch, id]);
 
+  const grab = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      onDragStart(event, id, index);
+    },
+    [onDragStart, id, index],
+  );
+
   if (!layer) return null;
 
   const kindLabel = KIND_LABELS[layer.kind];
 
   return (
-    <Row $selected={layer.id === selectedId} $hidden={!layer.visible}>
+    <Row
+      $selected={layer.id === selectedId}
+      $hidden={!layer.visible}
+      $dragging={dragging}
+      // Inline rather than a styled prop: styled-components would mint a new
+      // class for every pixel of travel. See CLAUDE.md "Performance".
+      style={offset === 0 ? undefined : { transform: `translateY(${String(offset)}px)` }}
+      data-testid="layer-row"
+    >
+      <DragHandle onPointerDown={grab} aria-hidden="true" data-testid="drag-handle">
+        ⠿
+      </DragHandle>
+
       <LayerSwatch layer={layer} />
 
       <Name
