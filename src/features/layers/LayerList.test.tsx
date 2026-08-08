@@ -136,4 +136,28 @@ describe('deleting a layer', () => {
 
     expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
   });
+
+  /*
+    The drag itself needs a real browser and lives in e2e/layer-reorder.spec.ts.
+    What jsdom can still hold us to is that the drag never became the *only*
+    way to reorder, which is the accessibility requirement.
+  */
+  it('keeps a drag handle out of the accessibility tree', () => {
+    renderWithProviders(<LayerList />, { store: hexStore() });
+
+    const handles = screen.getAllByTestId('drag-handle');
+
+    expect(handles).toHaveLength(3);
+    handles.forEach((handle) => {
+      expect(handle).toHaveAttribute('aria-hidden', 'true');
+      expect(handle).not.toHaveAttribute('tabindex');
+    });
+  });
+
+  it('still exposes a non-drag path for reordering', () => {
+    renderWithProviders(<LayerList />, { store: hexStore() });
+
+    expect(screen.getByRole('button', { name: 'Move Cyan glow down' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Move Diagonal wash up' })).toBeEnabled();
+  });
 });

@@ -207,6 +207,25 @@ const patternSlice = createSlice({
       if (moved) state.pattern.layers.splice(to, 0, moved);
     },
 
+    /**
+     * Where a drag lands. Deliberately separate from `layerMoved`: a button
+     * press means "up one", a drag means "put this at index N", and one action
+     * per gesture keeps the deferred history middleware honest — a drag should
+     * undo in a single step, not once per row the pointer crossed.
+     */
+    layerReordered(state, action: PayloadAction<{ id: string; toIndex: number }>) {
+      const { id, toIndex } = action.payload;
+      const layers = state.pattern.layers;
+      const from = layers.findIndex((layer) => layer.id === id);
+      if (from === -1) return;
+
+      const to = Math.min(Math.max(Math.trunc(toIndex), 0), layers.length - 1);
+      if (to === from) return;
+
+      const [moved] = layers.splice(from, 1);
+      if (moved) layers.splice(to, 0, moved);
+    },
+
     layerDuplicated: {
       reducer(state, action: PayloadAction<{ id: string; newId: string }>) {
         const index = state.pattern.layers.findIndex((layer) => layer.id === action.payload.id);
@@ -279,6 +298,7 @@ export const {
   layerUpdated,
   layerVisibilityToggled,
   layerMoved,
+  layerReordered,
   layerDuplicated,
   layerRemoved,
   lastRemovalUndone,
