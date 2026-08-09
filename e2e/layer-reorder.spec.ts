@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { previewImage } from './support';
 
 /**
  * Drag reordering is pointer-only behaviour, so jsdom cannot see any of it:
@@ -73,15 +74,14 @@ test('dragging a layer up the stack reorders it', async ({ page }) => {
 });
 
 test('reordering changes the generated CSS, not just the list', async ({ page }) => {
-  const css = page.locator('pre code');
-  const before = await css.textContent();
+  const before = await previewImage(page);
 
   await dragRow(page, 0, 2);
   await page.mouse.up();
 
   // The list order is the CSS order — if these can drift apart the output
   // stops being trustworthy, which is the whole product.
-  await expect(css).not.toHaveText(before ?? '');
+  await expect.poll(() => previewImage(page)).not.toBe(before);
 });
 
 test('Escape abandons a drag and leaves the stack alone', async ({ page }) => {

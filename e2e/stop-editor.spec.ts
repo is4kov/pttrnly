@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { previewImage } from './support';
 
 /**
  * Pointer drag cannot be covered by unit tests: jsdom has no layout and no
@@ -45,9 +46,8 @@ test('dragging a stop to the right increases its position', async ({ page }) => 
   expect(value).toBeGreaterThan(10);
 });
 
-test('dragging updates the copied CSS', async ({ page }) => {
-  const css = page.locator('pre code');
-  const before = await css.textContent();
+test('dragging updates the generated CSS', async ({ page }) => {
+  const before = await previewImage(page);
   const box = await trackBox(page);
 
   await stopHandles(page).first().hover();
@@ -55,7 +55,7 @@ test('dragging updates the copied CSS', async ({ page }) => {
   await page.mouse.move(box.x + box.width * 0.4, box.y + box.height / 2, { steps: 12 });
   await page.mouse.up();
 
-  await expect(css).not.toHaveText(before ?? '');
+  await expect.poll(() => previewImage(page)).not.toBe(before);
 });
 
 test('clicking the track adds a stop', async ({ page }) => {

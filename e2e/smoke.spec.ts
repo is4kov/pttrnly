@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { cssOutput, openCss, previewImage } from './support';
 
 test('the app loads with the starter pattern', async ({ page }) => {
   await page.goto('/');
@@ -14,9 +15,7 @@ test('the preview actually renders the generated CSS', async ({ page }) => {
 
   // This is the assertion jsdom cannot make: it drops modern gradient syntax,
   // so only a real browser can confirm the output is valid CSS at all.
-  const image = await page
-    .getByRole('img', { name: 'Pattern preview' })
-    .evaluate((element) => getComputedStyle(element).backgroundImage);
+  const image = await previewImage(page);
 
   expect(image).toContain('gradient');
   expect(image).not.toBe('none');
@@ -25,12 +24,11 @@ test('the preview actually renders the generated CSS', async ({ page }) => {
 test('oklch interpolation survives a real CSS parser', async ({ page }) => {
   await page.goto('/');
 
-  const css = await page.locator('pre code').textContent();
-  expect(css).toContain('in oklch');
+  await openCss(page);
+  expect(await cssOutput(page).inputValue()).toContain('in oklch');
+  await page.keyboard.press('Escape');
 
-  const image = await page
-    .getByRole('img', { name: 'Pattern preview' })
-    .evaluate((element) => getComputedStyle(element).backgroundImage);
+  const image = await previewImage(page);
 
   // A browser drops the whole declaration if the hint is misplaced — which is
   // exactly the bug that shipped in PTRN-3 and was only caught by eye.

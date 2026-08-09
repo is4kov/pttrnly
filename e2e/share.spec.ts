@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openCss, previewImage } from './support';
 
 test('the URL carries the pattern and survives a reload', async ({ page }) => {
   await page.goto('/');
@@ -7,11 +8,13 @@ test('the URL carries the pattern and survives a reload', async ({ page }) => {
   await page.waitForURL(/#p=/);
 
   const shared = page.url();
-  const cssBefore = await page.locator('pre code').textContent();
+  // Compare what the browser painted rather than the output string: it proves
+  // the round trip survived as renderable CSS, not merely as equal text.
+  const before = await previewImage(page);
 
   await page.goto(shared);
 
-  await expect(page.locator('pre code')).toHaveText(cssBefore ?? '');
+  await expect.poll(() => previewImage(page)).toBe(before);
 });
 
 test('an invalid link says so and does not blank the canvas', async ({ page }) => {
@@ -25,6 +28,7 @@ test('copying CSS puts the generated string on the clipboard', async ({ page, co
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/');
 
+  await openCss(page);
   await page.getByRole('button', { name: 'Copy CSS' }).click();
 
   // The app has several live regions, so `getByRole('status')` is ambiguous

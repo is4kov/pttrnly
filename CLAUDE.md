@@ -252,6 +252,7 @@ Known traps — don't rediscover these the hard way:
 - **jsdom has no Pointer Events.** Anything drag-based (stop editor, layer reorder, position pads) cannot be meaningfully unit-tested — those go in Playwright. Don't fake it with `mouseDown` and call it covered.
 - **jsdom has no real clipboard.** Stub the clipboard API in unit tests; verify actual copy behavior in Playwright.
 - **`crypto.randomUUID` breaks deterministic assertions.** Seed or stub it in `src/test/setup.ts` so layer IDs are stable, and build fixtures through shared factories in `src/test/`.
+- **jsdom defines `HTMLDialogElement` but none of its methods.** `showModal`, `show` and `close` are all missing, so a native `<dialog>` throws the moment it opens. `src/test/setup.ts` stubs them to track the `open` attribute and fire `close`. There is no top layer, no `inert` and no focus trap in jsdom, so modal behaviour — Escape, backdrop dismissal, focus trapping, focus restoration — is only ever verified in Playwright.
 - **`matchMedia` is unimplemented in jsdom** — needs a stub for anything reading `prefers-color-scheme` or `prefers-reduced-motion`.
 - Don't assert on styled-components' generated class names. Assert on role, label, or computed style.
 
