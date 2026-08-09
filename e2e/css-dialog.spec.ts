@@ -65,21 +65,37 @@ test('closing returns focus to the button that opened it', async ({ page }) => {
   await expect(trigger(page)).toBeFocused();
 });
 
-test('focus is trapped inside the dialog', async ({ page }) => {
+test('focus never reaches the page behind the dialog', async ({ page }) => {
   await openCss(page);
 
-  const inside = async () =>
+  const describeFocus = () =>
     page.evaluate(() => {
       const dialog = document.querySelector('dialog[open]');
-      return dialog instanceof HTMLElement && document.activeElement instanceof HTMLElement
-        ? dialog.contains(document.activeElement)
-        : false;
+      const active = document.activeElement;
+      if (!(dialog instanceof HTMLElement) || !(active instanceof HTMLElement)) return 'unknown';
+      if (dialog.contains(active)) return 'inside';
+
+      /*
+        Chrome parks focus on the body as it wraps past the last stop in a modal
+        dialog. That is the trap holding, not focus escaping — the previous
+        version of this test failed on exactly that and told us nothing useful.
+      */
+      if (active === document.body || active === document.documentElement) return 'wrapping';
+
+      const label = active.getAttribute('aria-label') ?? active.textContent?.trim() ?? '';
+      return `escaped to <${active.tagName.toLowerCase()}> ${label.slice(0, 40)}`;
     });
 
+  const seen: string[] = [];
   for (let i = 0; i < 12; i += 1) {
     await page.keyboard.press('Tab');
-    expect(await inside()).toBe(true);
+    seen.push(await describeFocus());
   }
+
+  expect(seen.filter((entry) => entry.startsWith('escaped'))).toEqual([]);
+  // Guards the vacuous pass: a dialog with nothing focusable would otherwise
+  // satisfy the assertion above.
+  expect(seen).toContain('inside');
 });
 
 test('the mode and colour toggles still drive the output', async ({ page }) => {
