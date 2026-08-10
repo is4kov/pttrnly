@@ -1,5 +1,6 @@
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import styled from 'styled-components';
+import { SelectShell, selectChrome } from './selectChrome';
 
 const Wrapper = styled.div`
   display: grid;
@@ -50,14 +51,7 @@ const Text = styled.input`
 `;
 
 const Choice = styled.select`
-  min-height: ${({ theme }) => theme.hitTarget};
-  padding: 0 ${({ theme }) => theme.space.sm}px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.sm};
-  background: ${({ theme }) => theme.colors.bg};
-  color: ${({ theme }) => theme.colors.text};
-  font: inherit;
-  font-size: 0.875rem;
+  ${selectChrome}
 `;
 
 const Note = styled.p`
@@ -194,19 +188,70 @@ export function SelectField<T extends string>({
 
   return (
     <Labelled label={label} id={id}>
-      <Choice
-        id={id}
-        value={value}
-        onChange={(event) => {
-          onChange(event.target.value as T);
-        }}
-      >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {labels?.[option] ?? option}
-          </option>
-        ))}
-      </Choice>
+      <SelectShell>
+        <Choice
+          id={id}
+          value={value}
+          onChange={(event) => {
+            onChange(event.target.value as T);
+          }}
+        >
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {labels?.[option] ?? option}
+            </option>
+          ))}
+        </Choice>
+      </SelectShell>
     </Labelled>
+  );
+}
+
+const CheckRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.space.sm}px;
+  min-height: ${({ theme }) => theme.hitTarget};
+`;
+
+const Check = styled.input`
+  width: 18px;
+  height: 18px;
+  accent-color: ${({ theme }) => theme.colors.accent};
+  cursor: pointer;
+`;
+
+const CheckLabel = styled.label`
+  font-size: 0.875rem;
+  cursor: pointer;
+`;
+
+type CheckboxFieldProps = {
+  label: string;
+  checked: boolean;
+  note?: string;
+  onChange: (checked: boolean) => void;
+};
+
+export function CheckboxField({ label, checked, note, onChange }: CheckboxFieldProps) {
+  const id = useId();
+  const noteId = `${id}-note`;
+
+  return (
+    <Wrapper>
+      <CheckRow>
+        <Check
+          id={id}
+          type="checkbox"
+          checked={checked}
+          aria-describedby={note ? noteId : undefined}
+          onChange={(event) => {
+            onChange(event.target.checked);
+          }}
+        />
+        <CheckLabel htmlFor={id}>{label}</CheckLabel>
+      </CheckRow>
+      {note ? <Note id={noteId}>{note}</Note> : null}
+    </Wrapper>
   );
 }

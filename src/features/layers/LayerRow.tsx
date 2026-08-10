@@ -35,7 +35,9 @@ const Row = styled.li<{ $selected: boolean; $hidden: boolean; $dragging: boolean
   flex-wrap: wrap;
   align-items: center;
   gap: ${({ theme }) => theme.space.sm}px;
-  padding: ${({ theme }) => theme.space.sm}px;
+  /* Right side is cleared for the absolutely placed delete button. */
+  padding: ${({ theme }) => theme.space.sm}px ${({ theme }) => theme.hitTarget}
+    ${({ theme }) => theme.space.sm}px ${({ theme }) => theme.space.sm}px;
   border-radius: ${({ theme }) => theme.radii.md};
   border: 0;
   background: ${({ theme, $selected }) => ($selected ? theme.colors.surface : 'transparent')};
@@ -119,24 +121,15 @@ const Kind = styled.span`
 `;
 
 /*
-  Wraps to its own line under the name. Delete is deliberately not in here —
-  see Remove below.
-*/
-const Actions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex: 1 0 100%;
-`;
-
-/*
-  Destructive, and irreversible-looking even though it is undoable — so it sits
-  apart in the row's top corner rather than in the cluster of everyday actions,
-  where it is easy to hit by accident.
+  Pinned to the row's top-right corner, not aligned by flex. Flex alignment put
+  it at the top of the first *line*, so on rows whose first line happened to be
+  exactly one control tall it looked vertically centred instead — the same
+  markup landing in different places depending on the row's content.
 */
 const Remove = styled.button`
-  align-self: flex-start;
-  flex: 0 0 auto;
+  position: absolute;
+  top: 0;
+  right: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -152,7 +145,68 @@ const Remove = styled.button`
 
   &:hover {
     background: ${({ theme }) => theme.colors.surface};
-    color: ${({ theme }) => theme.colors.text};
+    color: ${({ theme }) => theme.colors.danger};
+  }
+`;
+
+/* Wraps to its own line under the name. */
+const Actions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1 0 100%;
+`;
+
+/*
+  The button is the 44px hit area and is otherwise invisible; the switch you
+  actually see is the 38x22 track inside it. Same split as the gradient stop
+  handles — a control sized for a fingertip does not have to look like one.
+*/
+const Switch = styled.button`
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  min-width: ${({ theme }) => theme.hitTarget};
+  min-height: ${({ theme }) => theme.hitTarget};
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+`;
+
+/*
+  Filled when on, plain when off. Fill is a difference in shape and weight, not
+  only hue, so the state survives being seen in greyscale — which matters here
+  because the accent colours are red and green.
+*/
+const Track = styled.span<{ $on: boolean }>`
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme, $on }) => ($on ? theme.colors.success : theme.colors.border)};
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: background-color 140ms ease;
+  }
+`;
+
+const Knob = styled.span<{ $on: boolean }>`
+  position: absolute;
+  top: 2px;
+  left: ${({ $on }) => ($on ? '18px' : '2px')};
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.bg};
+  color: ${({ theme, $on }) => ($on ? theme.colors.success : theme.colors.danger)};
+  font-size: 0.625rem;
+  line-height: 1;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: left 140ms ease;
   }
 `;
 
@@ -261,14 +315,17 @@ function LayerRowComponent({ id, index, total, dragging, offset, onDragStart }: 
       </Remove>
 
       <Actions>
-        <IconButton
+        <Switch
           type="button"
+          role="switch"
+          aria-checked={layer.visible}
           onClick={toggle}
-          aria-label={layer.visible ? `Hide ${layer.name}` : `Show ${layer.name}`}
-          aria-pressed={!layer.visible}
+          aria-label={`${layer.name} visible`}
         >
-          {layer.visible ? '◉' : '○'}
-        </IconButton>
+          <Track aria-hidden="true" $on={layer.visible}>
+            <Knob $on={layer.visible}>{layer.visible ? '✓' : '✕'}</Knob>
+          </Track>
+        </Switch>
         <IconButton
           type="button"
           onClick={moveUp}

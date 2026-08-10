@@ -33,10 +33,15 @@ describe('LayerList', () => {
     const store = hexStore();
     renderWithProviders(<LayerList />, { store });
 
-    await user.click(screen.getByRole('button', { name: 'Hide Cyan glow' }));
+    const toggle = screen.getByRole('switch', { name: 'Cyan glow visible' });
+    expect(toggle).toBeChecked();
+
+    await user.click(toggle);
 
     expect(store.getState().pattern.pattern.layers[0]?.visible).toBe(false);
-    expect(screen.getByRole('button', { name: 'Show Cyan glow' })).toBeInTheDocument();
+    // A switch reports state through aria-checked rather than by relabelling
+    // itself, so the name stays put and only the state flips.
+    expect(screen.getByRole('switch', { name: 'Cyan glow visible' })).not.toBeChecked();
   });
 
   it('moves a layer up the stack', async () => {

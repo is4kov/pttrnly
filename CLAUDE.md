@@ -264,6 +264,10 @@ Repository: `https://github.com/is4kov/pttrnly`
 
 **Never run `git commit` unless the user explicitly asks for a commit in that message.** Finishing a task, passing tests, or reaching a "good stopping point" is not permission. Leave changes in the working tree and say what's staged/unstaged instead.
 
+**One exception: test-only changes may be committed unasked.** If every path in the diff is a test path — `*.test.ts`, `*.test.tsx`, anything under `e2e/`, or setup and factories under `src/test/` — commit it with a `test:` type message and report what was committed. Chasing a red CI run through several test-only fixes otherwise costs a round trip per attempt for no gain.
+
+The exception is narrow and literal. If the diff also touches application code the normal rule applies, **including when the only production change is a `data-testid` added so a test can find an element** — that is a change to the app, and it goes through the usual approval.
+
 - **The commit message is always discussed first.** Propose a message, wait for approval or edits, then commit. Never write a message and commit in the same step.
 - This applies to everything that writes history: `git commit`, `git commit --amend`, `git push`, `git merge`, `git rebase`, `git reset --hard`, `git checkout`/`switch` that would discard work, and branch deletion. Ask first.
 - Never bundle unrelated changes into one commit. If the working tree has several concerns in it, say so and propose how to split them.

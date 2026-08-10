@@ -5,10 +5,16 @@ import { ColorField } from '../../components/ColorField';
 import { StopBar } from './StopBar';
 import { StopTabs } from './StopTabs';
 import { ColorPicker } from '../../components/ColorPicker';
-import { NumberField, SelectField, TextField } from '../../components/Field';
+import { CheckboxField, NumberField, SelectField, TextField } from '../../components/Field';
 import { LengthField, type LengthRange } from '../../components/LengthField';
 import { isAllowedImageUrl } from '../../domain/validate';
-import { BLEND_MODES, RADIAL_EXTENTS, REPEAT_MODES } from '../../domain/types';
+import {
+  BLEND_MODES,
+  isRepeatingKind,
+  RADIAL_EXTENTS,
+  REPEAT_MODES,
+  toggleRepeatingKind,
+} from '../../domain/types';
 import type {
   BlendMode,
   GradientStop,
@@ -188,26 +194,64 @@ export function LayerEditor() {
             update({ position: { ...layer.position, y } });
           }}
         />
-        <SelectField
-          label="Repeat"
-          value={layer.repeat}
-          options={REPEAT_MODES}
-          onChange={(repeat: RepeatMode) => {
-            update({ repeat });
-          }}
-        />
-        {layer.repeat !== 'no-repeat' && layer.size.kind !== 'custom' && (
-          <Note>
-            Repeat has no visible effect while the size fills the canvas. Set size to custom and
-            give it fixed dimensions — say 40px by 40px — to see it tile.
-          </Note>
+        {/*
+          Only shown for a custom size. background-repeat has no visible effect
+          while the tile already fills the box, so at any other size this
+          control does nothing — which is what made it read as a duplicate of
+          the gradient's own Repeat.
+        */}
+        {layer.size.kind === 'custom' && (
+          <SelectField
+            label="Tiling"
+            value={layer.repeat}
+            options={REPEAT_MODES}
+            onChange={(repeat: RepeatMode) => {
+              update({ repeat });
+            }}
+          />
         )}
       </Group>
+
+      <RepeatControl layer={layer} update={update} />
 
       <KindFields layer={layer} update={update} />
 
       {'stops' in layer && <StopsSection layerId={layer.id} stops={layer.stops} />}
     </EditorPanel>
+  );
+}
+
+/**
+ * Whether the gradient's stops repeat.
+ *
+ * This flips the layer between a gradient kind and its `repeating-` twin. It is
+ * deliberately not the same control as Tiling: `repeating-linear-gradient()`
+ * repeats the stops inside one tile, `background-repeat` tiles the whole image,
+ * and they compose independently.
+ */
+function RepeatControl({
+  layer,
+  update,
+}: {
+  layer: Layer;
+  update: (changes: Partial<Layer>) => void;
+}) {
+  const flipped = toggleRepeatingKind(layer.kind);
+  if (flipped === null) return null;
+
+  return (
+    <Group>
+      <CheckboxField
+        label="Repeat stops"
+        checked={isRepeatingKind(layer.kind)}
+        note="Repeats the colour stops across the layer, which is what makes stripes and rings."
+        onChange={() => {
+          // No cast needed: each gradient type's `kind` is a two-member union
+          // over the same shape, so flipping it changes no other field.
+          update({ kind: flipped });
+        }}
+      />
+    </Group>
   );
 }
 
