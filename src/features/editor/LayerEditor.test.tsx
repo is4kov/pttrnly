@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { LayerEditor } from './LayerEditor';
-import { AddLayerMenu } from '../layers/AddLayerMenu';
+import { AddLayerButton } from '../layers/AddLayerButton';
 import { makeStore, patternStateFor, renderWithProviders, type TestStore } from '../../test/render';
 import { makeConicLayer, makeLinearLayer, makePattern, makeSolidLayer } from '../../test/factories';
 import { makeImageLayer, makeRadialLayer } from '../../test/factories';
@@ -174,14 +174,21 @@ describe('LayerEditor', () => {
   });
 });
 
-describe('AddLayerMenu', () => {
+describe('AddLayerButton', () => {
+  it('keeps the choices behind the button until asked', () => {
+    renderWithProviders(<AddLayerButton />, { store: storeWith([makeLinearLayer()]) });
+
+    expect(screen.getByRole('button', { name: 'Add layer' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Conic gradient' })).not.toBeInTheDocument();
+  });
+
   it('creates a layer of the chosen kind and selects it', async () => {
     const user = userEvent.setup();
     const store = storeWith([makeLinearLayer()]);
-    renderWithProviders(<AddLayerMenu />, { store });
+    renderWithProviders(<AddLayerButton />, { store });
 
-    await user.selectOptions(screen.getByLabelText('New layer'), 'conic-gradient');
     await user.click(screen.getByRole('button', { name: 'Add layer' }));
+    await user.click(screen.getByRole('button', { name: 'Conic gradient' }));
 
     const state = store.getState().pattern;
 
@@ -190,13 +197,24 @@ describe('AddLayerMenu', () => {
     expect(state.selectedLayerId).toBe(state.pattern.layers[0]?.id);
   });
 
+  it('closes once a kind is chosen', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<AddLayerButton />, { store: storeWith([makeLinearLayer()]) });
+
+    await user.click(screen.getByRole('button', { name: 'Add layer' }));
+    await user.click(screen.getByRole('button', { name: 'Conic gradient' }));
+
+    expect(screen.queryByRole('button', { name: 'Conic gradient' })).not.toBeInTheDocument();
+  });
+
   it('recovers from the empty state', async () => {
     const user = userEvent.setup();
     const store = makeStore({ pattern: patternStateFor(makePattern([])) });
 
-    renderWithProviders(<AddLayerMenu />, { store });
+    renderWithProviders(<AddLayerButton />, { store });
 
     await user.click(screen.getByRole('button', { name: 'Add layer' }));
+    await user.click(screen.getByRole('button', { name: 'Linear gradient' }));
 
     expect(store.getState().pattern.pattern.layers).toHaveLength(1);
   });

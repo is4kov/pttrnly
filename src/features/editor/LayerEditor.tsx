@@ -33,14 +33,26 @@ const Panel = styled.section`
   gap: ${({ theme }) => theme.space.lg}px;
 `;
 
+/*
+  The other half of the tab illusion. This carries the same surface as the
+  selected layer row and drops its left-hand corners, so where the two meet
+  there is no seam. See the note on Row in LayerRow.
+*/
+const EditorPanel = styled(Panel)`
+  padding: ${({ theme }) => theme.space.lg}px;
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.surface};
+  align-content: start;
+
+  ${({ theme }) => theme.media.from('md')} {
+    border-radius: 0 ${({ theme }) => theme.radii.md} ${({ theme }) => theme.radii.md}
+      ${({ theme }) => theme.radii.md};
+  }
+`;
+
 const Group = styled.div`
   display: grid;
   gap: ${({ theme }) => theme.space.md}px;
-`;
-
-const GroupTitle = styled.h3`
-  margin: 0;
-  font-size: 0.875rem;
 `;
 
 const Note = styled.p`
@@ -96,17 +108,20 @@ export function LayerEditor() {
 
   if (!layer) {
     return (
-      <Panel aria-labelledby="editor-heading">
-        <h2 id="editor-heading">Layer</h2>
+      <EditorPanel aria-label="Layer options">
         <Empty>Select a layer to edit it.</Empty>
-      </Panel>
+      </EditorPanel>
     );
   }
 
   return (
-    <Panel aria-labelledby="editor-heading">
-      <h2 id="editor-heading">Layer</h2>
-
+    /*
+      No visible heading: the panel is attached to the selected row, which
+      already names the layer, and the Name field below names it again. The
+      region still needs an accessible name, so it takes the layer's own —
+      more use to a screen reader than the word "Layer" was.
+    */
+    <EditorPanel aria-label={`Options for ${layer.name}`}>
       <Group>
         <TextField
           label="Name"
@@ -126,7 +141,7 @@ export function LayerEditor() {
       </Group>
 
       <Group>
-        <GroupTitle>Placement</GroupTitle>
+        <h3>Placement</h3>
         <SelectField
           label="Size"
           value={layer.size.kind}
@@ -192,7 +207,7 @@ export function LayerEditor() {
       <KindFields layer={layer} update={update} />
 
       {'stops' in layer && <StopsSection layerId={layer.id} stops={layer.stops} />}
-    </Panel>
+    </EditorPanel>
   );
 }
 
@@ -208,7 +223,7 @@ function KindFields({
     case 'repeating-linear-gradient':
       return (
         <Group>
-          <GroupTitle>Gradient</GroupTitle>
+          <h3>Gradient</h3>
           <NumberField
             label="Angle"
             value={layer.angle}
@@ -236,7 +251,7 @@ function KindFields({
     case 'repeating-radial-gradient':
       return (
         <Group>
-          <GroupTitle>Gradient</GroupTitle>
+          <h3>Gradient</h3>
           <SelectField
             label="Shape"
             value={layer.shape}
@@ -286,7 +301,7 @@ function KindFields({
     case 'repeating-conic-gradient':
       return (
         <Group>
-          <GroupTitle>Gradient</GroupTitle>
+          <h3>Gradient</h3>
           <NumberField
             label="From angle"
             value={layer.fromAngle}
@@ -329,7 +344,7 @@ function KindFields({
     case 'solid':
       return (
         <Group>
-          <GroupTitle>Colour</GroupTitle>
+          <h3>Colour</h3>
           <ColorField
             label="Fill"
             value={layer.color}
@@ -356,7 +371,7 @@ function KindFields({
 
       return (
         <Group>
-          <GroupTitle>Image</GroupTitle>
+          <h3>Image</h3>
           <TextField
             label="URL"
             value={layer.url}
@@ -383,7 +398,7 @@ function StopsSection({ layerId, stops }: { layerId: string; stops: GradientStop
 
   return (
     <Group>
-      <GroupTitle>Stops</GroupTitle>
+      <h3>Stops</h3>
       <StopBar layerId={layerId} stops={stops} selectedIndex={index} />
       <StopTabs layerId={layerId} stops={stops} selectedIndex={index} />
     </Group>

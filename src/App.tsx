@@ -18,7 +18,7 @@ const Layout = styled.div`
   display: grid;
   gap: ${({ theme }) => theme.space.xl}px;
   padding: ${({ theme }) => theme.space.lg}px;
-  max-width: 76rem;
+  max-width: 90rem;
   margin: 0 auto;
 
   ${({ theme }) => theme.media.from('md')} {
@@ -33,6 +33,14 @@ const Header = styled.header`
   gap: ${({ theme }) => theme.space.md}px;
 `;
 
+/* Pushes the export control to the far end of the header row. */
+const HeaderActions = styled.div`
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.space.sm}px;
+`;
+
 const Title = styled.h1`
   margin: 0;
   font-size: 1.5rem;
@@ -45,34 +53,63 @@ const Tagline = styled.p`
   font-size: 0.875rem;
 `;
 
-// A <main> landmark, not a div: axe requires exactly one, and without it the
-// whole editor sits outside any landmark and is unreachable by landmark nav.
-const Panes = styled.main`
-  display: grid;
-  gap: ${({ theme }) => theme.space.xl}px;
+/*
+  A <main> landmark, not a div: axe requires exactly one, and without it the
+  whole editor sits outside any landmark and is unreachable by landmark nav.
 
-  ${({ theme }) => theme.media.from('lg')} {
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  Flex rather than grid, and that is load-bearing: a sticky element inside a
+  grid is confined to its own grid area, so as a grid row the preview would
+  have no travel and would simply never stick. In a flex column its containing
+  block is the whole main, which is what gives it somewhere to go.
+*/
+const Panes = styled.main`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.space.xl}px;
+`;
+
+/*
+  One arrangement at every width, so scrolling can never rearrange anything.
+  The editor genuinely passes underneath, so the pane needs its own opaque
+  background and has to sit above the content.
+*/
+const PreviewPane = styled.div`
+  position: sticky;
+  top: 0;
+  z-index: ${({ theme }) => theme.z.sheet};
+  /*
+    Padding rather than a margin below the preview: it sits inside the sticky
+    pane, so the opaque background extends with it and the editor passes under
+    a clean band instead of sliding right up to the preview's edge.
+  */
+  padding-block: ${({ theme }) => theme.space.sm}px ${({ theme }) => theme.space.xl}px;
+  background: ${({ theme }) => theme.colors.bg};
+`;
+
+/*
+  The layer rail and the editor panel, joined. No gap between the columns is
+  deliberate: the selected row has to touch the panel for the two to read as
+  one shape. Below md the panel drops underneath the rail instead.
+*/
+const Workbench = styled.div`
+  display: grid;
+  gap: ${({ theme }) => theme.space.md}px;
+
+  ${({ theme }) => theme.media.from('md')} {
+    grid-template-columns: minmax(0, 17rem) minmax(0, 1fr);
+    gap: 0;
     align-items: start;
   }
 `;
 
-const Stack = styled.div`
+/** Secondary settings, out of the main editing path. */
+const Extras = styled.div`
   display: grid;
   gap: ${({ theme }) => theme.space.xl}px;
-  align-content: start;
-`;
 
-/**
- * The result stays on screen while you work down a long editor panel —
- * otherwise you are editing a pattern you cannot see.
- */
-const StickyStack = styled(Stack)`
   ${({ theme }) => theme.media.from('lg')} {
-    position: sticky;
-    top: ${({ theme }) => theme.space.lg}px;
-    max-height: calc(100dvh - ${({ theme }) => theme.space.xxl}px);
-    overflow-y: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
   }
 `;
 
@@ -98,6 +135,9 @@ export default function App() {
         <Header>
           <Title>pttrnly</Title>
           <Tagline>Complex CSS backgrounds from stacked layers.</Tagline>
+          <HeaderActions>
+            <CssOutput />
+          </HeaderActions>
         </Header>
         <ShareBanner incoming={incomingLink} />
         {storageProblem ? (
@@ -106,16 +146,19 @@ export default function App() {
           </Warning>
         ) : null}
         <Panes>
-          <StickyStack>
+          <PreviewPane>
             <PreviewSurface />
-            <CssOutput />
-          </StickyStack>
-          <Stack>
+          </PreviewPane>
+
+          <Workbench>
             <LayerList />
             <LayerEditor />
+          </Workbench>
+
+          <Extras>
             <CanvasEditor />
             <PatternLibrary />
-          </Stack>
+          </Extras>
         </Panes>
         <UndoDeleteToast />
       </Layout>

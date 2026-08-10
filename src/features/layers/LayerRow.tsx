@@ -23,19 +23,36 @@ const KIND_LABELS: Record<LayerKind, string> = {
   image: 'Image',
 };
 
+/*
+  Selection is carried by background, not by a border: the selected row shares
+  the editor panel's surface and loses its right-hand corners, so the row and
+  the panel read as one shape — the row is the tab, the panel is its content.
+  That coupling is the whole point of the layout, so it is styled here rather
+  than in the rail.
+*/
 const Row = styled.li<{ $selected: boolean; $hidden: boolean; $dragging: boolean }>`
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: ${({ theme }) => theme.space.md}px;
+  gap: ${({ theme }) => theme.space.sm}px;
   padding: ${({ theme }) => theme.space.sm}px;
   border-radius: ${({ theme }) => theme.radii.md};
-  border: 1px solid
-    ${({ theme, $selected }) => ($selected ? theme.colors.accent : theme.colors.border)};
-  background: ${({ theme }) => theme.colors.bg};
+  border: 0;
+  background: ${({ theme, $selected }) => ($selected ? theme.colors.surface : 'transparent')};
   opacity: ${({ $hidden }) => ($hidden ? 0.55 : 1)};
   position: relative;
   z-index: ${({ $dragging }) => ($dragging ? 1 : 0)};
   box-shadow: ${({ $dragging }) => ($dragging ? '0 8px 24px rgba(0, 0, 0, 0.28)' : 'none')};
+
+  &:hover {
+    background: ${({ theme, $selected }) =>
+      $selected ? theme.colors.surface : theme.colors.surfaceMuted};
+  }
+
+  /* Only where the panel actually sits to the right of the rail. */
+  ${({ theme }) => theme.media.from('md')} {
+    border-radius: ${({ theme }) => theme.radii.md} 0 0 ${({ theme }) => theme.radii.md};
+  }
 
   /*
     Only the rows making room animate. The lifted row already tracks the
@@ -101,11 +118,42 @@ const Kind = styled.span`
   color: ${({ theme }) => theme.colors.textMuted};
 `;
 
+/*
+  Wraps to its own line under the name. Delete is deliberately not in here —
+  see Remove below.
+*/
 const Actions = styled.div`
   display: flex;
   align-items: center;
   gap: 2px;
+  flex: 1 0 100%;
+`;
+
+/*
+  Destructive, and irreversible-looking even though it is undoable — so it sits
+  apart in the row's top corner rather than in the cluster of everyday actions,
+  where it is easy to hit by accident.
+*/
+const Remove = styled.button`
+  align-self: flex-start;
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: ${({ theme }) => theme.hitTarget};
+  min-height: ${({ theme }) => theme.hitTarget};
+  border: 0;
+  border-radius: ${({ theme }) => theme.radii.sm};
+  background: none;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.surface};
+    color: ${({ theme }) => theme.colors.text};
+  }
 `;
 
 const IconButton = styled.button`
@@ -208,6 +256,10 @@ function LayerRowComponent({ id, index, total, dragging, offset, onDragStart }: 
         <Kind>{kindLabel}</Kind>
       </Name>
 
+      <Remove type="button" onClick={remove} aria-label={`Delete ${layer.name}`}>
+        ✕
+      </Remove>
+
       <Actions>
         <IconButton
           type="button"
@@ -235,9 +287,6 @@ function LayerRowComponent({ id, index, total, dragging, offset, onDragStart }: 
         </IconButton>
         <IconButton type="button" onClick={duplicate} aria-label={`Duplicate ${layer.name}`}>
           ⧉
-        </IconButton>
-        <IconButton type="button" onClick={remove} aria-label={`Delete ${layer.name}`}>
-          ✕
         </IconButton>
       </Actions>
     </Row>

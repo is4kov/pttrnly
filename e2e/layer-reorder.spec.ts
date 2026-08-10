@@ -12,10 +12,19 @@ import { previewImage } from './support';
 const rows = (page: Page) => page.getByTestId('layer-row');
 const handles = (page: Page) => page.getByTestId('drag-handle');
 
-/** Layer names, top of the stack first. */
+/**
+ * Layer names, top of the stack first.
+ *
+ * Read from the Select buttons rather than row text: a row's innerText begins
+ * with the drag handle's glyph, so slicing it yields '⠿ Cyan glow'. Comparing
+ * permutations of that still passes, which is exactly why it went unnoticed —
+ * the values were wrong but consistently so.
+ */
 async function layerOrder(page: Page): Promise<string[]> {
-  const texts = await rows(page).allInnerTexts();
-  return texts.map((text) => text.split('\n')[0]?.trim() ?? '');
+  const labels = await page
+    .getByRole('button', { name: /^Select / })
+    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('aria-label') ?? ''));
+  return labels.map((label) => label.replace(/^Select /, ''));
 }
 
 async function boxOf(page: Page, testId: string, index: number) {
@@ -28,24 +37,35 @@ async function boxOf(page: Page, testId: string, index: number) {
 /**
  * Drags the row at `from` onto the row at `to`.
  *
- * Both boxes are measured before the gesture starts: once the drag is live the
- * rows are translating, so anything measured mid-drag reports where a row has
- * moved to rather than where it belongs.
+ * Moves by the distance between the two rows' centres rather than to an
+ * absolute position. That is the model the hook itself uses — a row takes a
+ * slot once its centre passes that slot's midpoint — so the gesture cannot
+ * drift from it. Aiming at an absolute point derived from the handle broke as
+ * soon as rows wrapped: the handle sits on the row's first line, not at its
+ * centre, and the offset silently ate the margin.
+ *
+ * Boxes are measured before the gesture starts. Once the drag is live the rows
+ * are translating, so anything measured mid-drag reports where a row has moved
+ * to rather than where it belongs.
  */
 async function dragRow(page: Page, from: number, to: number) {
   await handles(page).nth(from).scrollIntoViewIfNeeded();
 
   const handle = await boxOf(page, 'drag-handle', from);
+  const source = await boxOf(page, 'layer-row', from);
   const target = await boxOf(page, 'layer-row', to);
 
-  const x = handle.x + handle.width / 2;
-  // Land clear of the target's midpoint rather than exactly on it — the row
-  // only takes a slot once its centre has passed the midpoint.
-  const overshoot = to > from ? 0.85 : 0.15;
+  const centreOf = (box: { y: number; height: number }) => box.y + box.height / 2;
+  // Clear the midpoint rather than landing exactly on it.
+  const overshoot = to > from ? 8 : -8;
+  const travel = centreOf(target) - centreOf(source) + overshoot;
 
-  await page.mouse.move(x, handle.y + handle.height / 2);
+  const x = handle.x + handle.width / 2;
+  const grabY = handle.y + handle.height / 2;
+
+  await page.mouse.move(x, grabY);
   await page.mouse.down();
-  await page.mouse.move(x, target.y + target.height * overshoot, { steps: 15 });
+  await page.mouse.move(x, grabY + travel, { steps: 15 });
 }
 
 test.beforeEach(async ({ page }) => {

@@ -16,6 +16,12 @@ const Surface = styled.div`
   width: 100%;
   aspect-ratio: 16 / 10;
   min-height: 220px;
+  /*
+    The cap wins over the ratio, leaving a wider preview rather than a taller
+    page. It is pinned above the editor at every size, so it has to leave
+    enough of the viewport to actually work in.
+  */
+  max-height: var(--preview-pinned);
 `;
 
 const EmptyState = styled.p`
@@ -48,7 +54,7 @@ export function PreviewSurface() {
   }, [css]);
 
   return (
-    <Frame>
+    <Frame data-testid="preview-frame">
       <Surface
         ref={surfaceRef}
         data-testid="preview-surface"
