@@ -21,6 +21,8 @@ export type AppTheme = {
   colors: {
     bg: string;
     surface: string;
+    /** One step short of `surface` — for hover on something not yet selected. */
+    surfaceMuted: string;
     border: string;
     text: string;
     textMuted: string;
@@ -60,6 +62,7 @@ export const lightTheme: AppTheme = {
   colors: {
     bg: '#ffffff',
     surface: '#f4f4f5',
+    surfaceMuted: '#fafafa',
     border: '#d4d4d8',
     text: '#18181b',
     textMuted: '#52525b',
@@ -74,6 +77,7 @@ export const darkTheme: AppTheme = {
   colors: {
     bg: '#09090b',
     surface: '#18181b',
+    surfaceMuted: '#111114',
     border: '#3f3f46',
     text: '#fafafa',
     textMuted: '#a1a1aa',
