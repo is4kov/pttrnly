@@ -150,6 +150,46 @@ export const LAYER_KINDS: readonly LayerKind[] = [
   'image',
 ];
 
+/*
+  Repeating is a property of a gradient, not a separate kind of layer, so it is
+  not offered at creation — you pick a gradient and then decide whether its
+  stops repeat. `LAYER_KINDS` still lists every kind, because the URL decoder
+  and the CSS generator have to handle all of them however a layer got here.
+*/
+export const CREATABLE_KINDS: readonly LayerKind[] = [
+  'linear-gradient',
+  'radial-gradient',
+  'conic-gradient',
+  'solid',
+  'image',
+];
+
+/**
+ * The repeating counterpart of each gradient kind.
+ *
+ * Note this is a different concept from `background-repeat`, which tiles the
+ * whole image: `repeating-linear-gradient()` repeats the colour stops within a
+ * single tile. The two compose independently, and conflating them would cost
+ * the ability to make stripes at all.
+ */
+const REPEATING_PAIRS: Readonly<Record<string, LayerKind>> = {
+  'linear-gradient': 'repeating-linear-gradient',
+  'repeating-linear-gradient': 'linear-gradient',
+  'radial-gradient': 'repeating-radial-gradient',
+  'repeating-radial-gradient': 'radial-gradient',
+  'conic-gradient': 'repeating-conic-gradient',
+  'repeating-conic-gradient': 'conic-gradient',
+};
+
+export function isRepeatingKind(kind: LayerKind): boolean {
+  return kind.startsWith('repeating-');
+}
+
+/** The same gradient with its stop repetition flipped, or null if not a gradient. */
+export function toggleRepeatingKind(kind: LayerKind): LayerKind | null {
+  return REPEATING_PAIRS[kind] ?? null;
+}
+
 export type Canvas = {
   width: number;
   height: number;

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { previewImage } from './support';
 
 /**
  * The rail and the editor panel are meant to read as one shape — the selected
@@ -90,6 +91,20 @@ test('adding a layer goes through a dialog', async ({ page }) => {
 
   await expect(rows(page)).toHaveCount(before + 1);
   await expect(dialog(page)).toBeHidden();
+});
+
+test('the visibility switch is touch-sized and changes what is painted', async ({ page }) => {
+  const toggle = page.getByRole('switch').first();
+  const box = await boxOf(page, toggle);
+  const before = await previewImage(page);
+
+  expect(box.height).toBeGreaterThanOrEqual(44);
+
+  await toggle.click();
+
+  await expect(toggle).not.toBeChecked();
+  // The state has to reach the output, not just the control.
+  await expect.poll(() => previewImage(page)).not.toBe(before);
 });
 
 test.describe('the pinned preview', () => {

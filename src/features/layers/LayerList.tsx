@@ -32,27 +32,31 @@ const Rail = styled.section`
 `;
 
 /*
-  Size and weight come from the global heading rules — the rest is local.
-
   Below md the rail is a plain column and this pins under the preview, so a long
   layer list can be scrolled without losing the heading. It stops helping once
   you scroll past the rail into the options panel; fixing that properly is the
   mobile navigation rework, not this.
 */
-const Heading = styled.h2`
+const Head = styled.div`
   position: sticky;
   top: calc(var(--preview-pinned) + ${({ theme }) => theme.space.lg}px);
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.space.sm}px;
   padding: ${({ theme }) => theme.space.xs}px ${({ theme }) => theme.space.sm}px;
   background: ${({ theme }) => theme.colors.bg};
 
   ${({ theme }) => theme.media.from('md')} {
-    /* The rail itself is pinned now, so the heading rides along with it. */
+    /* The rail itself is pinned now, so the header rides along with it. */
     position: static;
-    padding: 0 ${({ theme }) => theme.space.sm}px;
     background: none;
   }
 `;
+
+/* Size and weight come from the global heading rules. */
+const Heading = styled.h2``;
 
 const Hint = styled.p`
   margin: 0;
@@ -85,7 +89,9 @@ export function LayerList() {
 
   return (
     <Rail aria-labelledby="layers-heading">
-      <Heading id="layers-heading">Layers</Heading>
+      <Head>
+        <Heading id="layers-heading">Layers</Heading>
+      </Head>
       <Hint>The top layer paints over the ones below it, matching the CSS order.</Hint>
 
       {ids.length === 0 ? (

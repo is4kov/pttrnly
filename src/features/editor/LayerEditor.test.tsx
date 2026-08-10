@@ -95,16 +95,51 @@ describe('LayerEditor', () => {
     expect(size?.kind === 'custom' && size.width !== 'auto' ? size.width.unit : null).toBe('px');
   });
 
-  it('explains why repeat looks inert while the size fills the canvas', async () => {
+  it('hides tiling until the size makes it mean something', async () => {
     const user = userEvent.setup();
     const store = storeWith([makeLinearLayer({ repeat: 'repeat' })]);
     renderWithProviders(<LayerEditor />, { store });
 
-    expect(screen.getByText(/Repeat has no visible effect/)).toBeInTheDocument();
+    // background-repeat does nothing while the tile already fills the box, and
+    // a control that does nothing is what made it read as a duplicate.
+    expect(screen.queryByLabelText('Tiling')).not.toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText('Size'), 'custom');
 
-    expect(screen.queryByText(/Repeat has no visible effect/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Tiling')).toBeInTheDocument();
+  });
+
+  it('repeats the stops without touching tiling', async () => {
+    const user = userEvent.setup();
+    const store = storeWith([makeLinearLayer({ repeat: 'no-repeat' })]);
+    renderWithProviders(<LayerEditor />, { store });
+
+    await user.click(screen.getByLabelText('Repeat stops'));
+
+    const layer = store.getState().pattern.pattern.layers[0];
+
+    // Two different CSS features: the gradient function changed, the
+    // background-repeat value did not.
+    expect(layer?.kind).toBe('repeating-linear-gradient');
+    expect(layer?.repeat).toBe('no-repeat');
+  });
+
+  it('turns stop repetition back off', async () => {
+    const user = userEvent.setup();
+    const store = storeWith([makeLinearLayer({ kind: 'repeating-linear-gradient' })]);
+    renderWithProviders(<LayerEditor />, { store });
+
+    expect(screen.getByLabelText('Repeat stops')).toBeChecked();
+
+    await user.click(screen.getByLabelText('Repeat stops'));
+
+    expect(store.getState().pattern.pattern.layers[0]?.kind).toBe('linear-gradient');
+  });
+
+  it('offers no stop repetition for a solid layer', () => {
+    renderWithProviders(<LayerEditor />, { store: storeWith([makeSolidLayer()]) });
+
+    expect(screen.queryByLabelText('Repeat stops')).not.toBeInTheDocument();
   });
 
   it('shows shape and extent for a radial gradient', () => {
@@ -175,6 +210,18 @@ describe('LayerEditor', () => {
 });
 
 describe('AddLayerButton', () => {
+  it('offers gradients without their repeating twins', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<AddLayerButton />, { store: storeWith([makeLinearLayer()]) });
+
+    await user.click(screen.getByRole('button', { name: 'Add layer' }));
+
+    // Repeating is a property of a gradient, set in the layer's own options —
+    // not a separate kind of layer to choose between at creation.
+    expect(screen.getByRole('button', { name: 'Linear gradient' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Repeating linear' })).not.toBeInTheDocument();
+  });
+
   it('keeps the choices behind the button until asked', () => {
     renderWithProviders(<AddLayerButton />, { store: storeWith([makeLinearLayer()]) });
 

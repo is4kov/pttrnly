@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { useAppDispatch } from '../../app/hooks';
 import { Dialog } from '../../components/Dialog';
 import { KIND_NAMES } from '../../domain/defaults';
-import { LAYER_KINDS, type LayerKind } from '../../domain/types';
+import { CREATABLE_KINDS, type LayerKind } from '../../domain/types';
 import { layerAdded } from '../pattern/patternSlice';
 
 const Trigger = styled.button`
@@ -82,7 +82,7 @@ export function AddLayerButton() {
 
       <Dialog open={open} onClose={close} title="Add a layer">
         <Choices>
-          {LAYER_KINDS.map((kind) => (
+          {CREATABLE_KINDS.map((kind) => (
             <Choice
               key={kind}
               type="button"

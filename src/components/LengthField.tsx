@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 import styled from 'styled-components';
+import { SelectShell, selectChrome } from './selectChrome';
 import type { Length, LengthUnit } from '../domain/length';
 import { LENGTH_UNITS } from '../domain/length';
 
@@ -38,16 +39,13 @@ const NumberInput = styled.input`
   font-size: 0.875rem;
 `;
 
-const Unit = styled.select`
+const UnitShell = styled(SelectShell)`
   flex: 0 0 auto;
-  min-height: ${({ theme }) => theme.hitTarget};
-  padding: 0 ${({ theme }) => theme.space.xs}px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.sm};
-  background: ${({ theme }) => theme.colors.bg};
-  color: ${({ theme }) => theme.colors.text};
-  font: inherit;
-  font-size: 0.875rem;
+`;
+
+const Unit = styled.select`
+  ${selectChrome}
+  padding-left: ${({ theme }) => theme.space.xs}px;
 `;
 
 export type LengthRange = { min: number; max: number };
@@ -106,21 +104,23 @@ export function LengthField({ label, value, ranges, onChange }: Props) {
             setDraft(String(value.value));
           }}
         />
-        <Unit
-          id={unitId}
-          value={value.unit}
-          aria-label={`${label} unit`}
-          onChange={(event) => {
-            // Keep the number, change the unit — 40% becomes 40px, which is predictable.
-            onChange({ value: value.value, unit: event.target.value as LengthUnit });
-          }}
-        >
-          {LENGTH_UNITS.map((unit) => (
-            <option key={unit} value={unit}>
-              {unit}
-            </option>
-          ))}
-        </Unit>
+        <UnitShell>
+          <Unit
+            id={unitId}
+            value={value.unit}
+            aria-label={`${label} unit`}
+            onChange={(event) => {
+              // Keep the number, change the unit — 40% becomes 40px, which is predictable.
+              onChange({ value: value.value, unit: event.target.value as LengthUnit });
+            }}
+          >
+            {LENGTH_UNITS.map((unit) => (
+              <option key={unit} value={unit}>
+                {unit}
+              </option>
+            ))}
+          </Unit>
+        </UnitShell>
       </Row>
     </Wrapper>
   );

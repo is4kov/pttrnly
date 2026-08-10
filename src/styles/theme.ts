@@ -28,6 +28,9 @@ export type AppTheme = {
     textMuted: string;
     accent: string;
     focus: string;
+    /* Semantic state colours. Never the only signal — pair with shape or text. */
+    danger: string;
+    success: string;
   };
   /** Spacing scale in px. Named rather than indexed so noUncheckedIndexedAccess stays happy. */
   space: {
@@ -68,6 +71,8 @@ export const lightTheme: AppTheme = {
     textMuted: '#52525b',
     accent: '#4f46e5',
     focus: '#4f46e5',
+    danger: '#b91c1c',
+    success: '#15803d',
   },
 };
 
@@ -83,5 +88,7 @@ export const darkTheme: AppTheme = {
     textMuted: '#a1a1aa',
     accent: '#a5b4fc',
     focus: '#a5b4fc',
+    danger: '#f87171',
+    success: '#4ade80',
   },
 };
