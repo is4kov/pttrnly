@@ -54,7 +54,7 @@ export function PreviewSurface() {
   }, [css]);
 
   return (
-    <Frame>
+    <Frame data-testid="preview-frame">
       <Surface
         ref={surfaceRef}
         data-testid="preview-surface"

@@ -8,6 +8,12 @@ import { expect, test, type Page } from '@playwright/test';
  */
 
 const preview = (page: Page) => page.getByRole('img', { name: 'Pattern preview' });
+/*
+  The frame, not the surface inside it: role="img" sits on the inner element,
+  which is 2px narrower than its container because of the frame's border.
+  Measuring that against a full-width row compares the wrong two things.
+*/
+const previewFrame = (page: Page) => page.getByTestId('preview-frame');
 const rows = (page: Page) => page.getByTestId('layer-row');
 // The panel has no visible heading; it is named after the layer it is editing.
 const editor = (page: Page) => page.getByRole('region', { name: /^Options for / });
@@ -38,12 +44,12 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('the preview runs the full width, above the layers', async ({ page }) => {
-  const surface = await boxOf(page, preview(page));
+  const frame = await boxOf(page, previewFrame(page));
   const firstRow = await boxOf(page, rows(page).first());
 
   // Equal, not wider, once the rail itself is full width on a narrow screen.
-  expect(surface.width).toBeGreaterThanOrEqual(firstRow.width);
-  expect(surface.y + surface.height).toBeLessThanOrEqual(firstRow.y);
+  expect(frame.width).toBeGreaterThanOrEqual(firstRow.width);
+  expect(frame.y + frame.height).toBeLessThanOrEqual(firstRow.y);
 });
 
 test('the preview does not swallow the fold', async ({ page }) => {
