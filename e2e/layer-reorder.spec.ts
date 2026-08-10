@@ -12,10 +12,19 @@ import { previewImage } from './support';
 const rows = (page: Page) => page.getByTestId('layer-row');
 const handles = (page: Page) => page.getByTestId('drag-handle');
 
-/** Layer names, top of the stack first. */
+/**
+ * Layer names, top of the stack first.
+ *
+ * Read from the Select buttons rather than row text: a row's innerText begins
+ * with the drag handle's glyph, so slicing it yields '⠿ Cyan glow'. Comparing
+ * permutations of that still passes, which is exactly why it went unnoticed —
+ * the values were wrong but consistently so.
+ */
 async function layerOrder(page: Page): Promise<string[]> {
-  const texts = await rows(page).allInnerTexts();
-  return texts.map((text) => text.split('\n')[0]?.trim() ?? '');
+  const labels = await page
+    .getByRole('button', { name: /^Select / })
+    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('aria-label') ?? ''));
+  return labels.map((label) => label.replace(/^Select /, ''));
 }
 
 async function boxOf(page: Page, testId: string, index: number) {

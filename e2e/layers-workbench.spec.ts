@@ -12,6 +12,19 @@ const rows = (page: Page) => page.getByTestId('layer-row');
 // The panel has no visible heading; it is named after the layer it is editing.
 const editor = (page: Page) => page.getByRole('region', { name: /^Options for / });
 const dialog = (page: Page) => page.getByRole('dialog');
+const rail = (page: Page) => page.getByRole('region', { name: 'Layers' });
+
+/*
+  Names come from the Select buttons, not from row text. A row's innerText
+  starts with the drag handle's glyph, so splitting it yields '⠿ Cyan glow'
+  rather than a name — which then matches no accessible label at all.
+*/
+async function layerNames(page: Page): Promise<string[]> {
+  const labels = await page
+    .getByRole('button', { name: /^Select / })
+    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('aria-label') ?? ''));
+  return labels.map((label) => label.replace(/^Select /, ''));
+}
 
 async function boxOf(page: Page, locator: ReturnType<typeof preview>) {
   const box = await locator.boundingBox();
@@ -28,7 +41,8 @@ test('the preview runs the full width, above the layers', async ({ page }) => {
   const surface = await boxOf(page, preview(page));
   const firstRow = await boxOf(page, rows(page).first());
 
-  expect(surface.width).toBeGreaterThan(firstRow.width);
+  // Equal, not wider, once the rail itself is full width on a narrow screen.
+  expect(surface.width).toBeGreaterThanOrEqual(firstRow.width);
   expect(surface.y + surface.height).toBeLessThanOrEqual(firstRow.y);
 });
 
@@ -51,8 +65,9 @@ test('nothing overflows sideways at any tested width', async ({ page }) => {
 });
 
 test('selecting a row drives the editor panel', async ({ page }) => {
-  const names = await rows(page).allInnerTexts();
-  const second = names[1]?.split('\n')[0]?.trim() ?? '';
+  const names = await layerNames(page);
+  const second = names[1] ?? '';
+  expect(second).not.toBe('');
 
   await page.getByRole('button', { name: `Select ${second}` }).click();
 
@@ -72,7 +87,7 @@ test('adding a layer goes through a dialog', async ({ page }) => {
 });
 
 test.describe('the pinned preview', () => {
-  test('the preview stays put while the editor scrolls under it', async ({ page }) => {
+  test('the preview pins to the top instead of scrolling away', async ({ page }) => {
     const before = await boxOf(page, preview(page));
 
     await page.mouse.wheel(0, 1200);
@@ -81,9 +96,14 @@ test.describe('the pinned preview', () => {
 
     const after = await boxOf(page, preview(page));
 
-    // The whole point: it pins rather than scrolling away.
-    expect(after.y).toBeGreaterThan(before.y - 8);
-    expect(after.y).toBeLessThanOrEqual(before.y + 8);
+    /*
+      A sticky element starts wherever the flow puts it — here below the header
+      — and travels up until it pins. So the assertion is not that it never
+      moved, but that it stopped at the top and stayed on screen.
+    */
+    expect(after.y).toBeLessThan(before.y);
+    expect(after.y).toBeLessThanOrEqual(24);
+    await expect(preview(page)).toBeInViewport();
   });
 
   test('scrolling never rearranges the layout', async ({ page }) => {
@@ -108,15 +128,19 @@ test.describe('side by side, from md up', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) < 768, 'the panel stacks on small screens');
 
   test('the layer rail is pinned as well as the preview', async ({ page }) => {
-    const before = await boxOf(page, page.getByRole('region', { name: 'Layers' }));
+    const before = await boxOf(page, rail(page));
 
     await page.mouse.wheel(0, 1200);
     await page.waitForFunction(() => window.scrollY > 200);
 
-    const after = await boxOf(page, page.getByRole('region', { name: 'Layers' }));
+    const after = await boxOf(page, rail(page));
+    const pinnedPreview = await boxOf(page, preview(page));
 
-    // Pinned, so the stack stays reachable however deep into the options you go.
-    expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(8);
+    // Comes to rest just under the pinned preview rather than scrolling away,
+    // so the stack stays reachable however deep into the options you are.
+    expect(after.y).toBeLessThan(before.y);
+    expect(after.y).toBeGreaterThanOrEqual(pinnedPreview.y + pinnedPreview.height - 8);
+    await expect(rail(page)).toBeInViewport();
   });
 
   test('the selected row meets the panel with no seam', async ({ page }) => {
